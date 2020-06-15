@@ -1,0 +1,15 @@
+[submodule "third-party/stb"]
+	path = editor/third-party/stb
+	url = https://github.com/nothings/stb
+[submodule "third-party/glfw"]
+	path = editor/third-party/glfw
+	url = https://github.com/glfw/glfw
+[submodule "editor/third-party/imgui"]
+	path = editor/third-party/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "editor/third-party/glm"]
+	path = editor/third-party/glm
+	url = https://github.com/g-truc/glm
+[submodule "editor/third-party/portable-file-dialogs"]
+	path = editor/third-party/portable-file-dialogs
+	url = https://github.com/samhocevar/portable-file-dialogs/
