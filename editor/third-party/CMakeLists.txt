@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-if(SUBMODULES_CLONED)
+if(NOT SUBMODULES_CLONED)
 
   find_package(Git REQUIRED)
 
@@ -8,7 +8,7 @@ if(SUBMODULES_CLONED)
 
   set(SUBMODULES_CLONED TRUE CACHE BOOL "Whether or not the Git submodules have been cloned.")
 
-endif(SUBMODULES_CLONED)
+endif(NOT SUBMODULES_CLONED)
 
 add_subdirectory(glfw)
 add_subdirectory(glm)
