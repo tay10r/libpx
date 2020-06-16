@@ -17,5 +17,19 @@ That is where a user sets the beginning and ending positions of a 3D shape and t
 
 The library doesn't have any special build instructions, just compile the `libpx.cpp` file.
 A compiler that supports the C++14 standard is required.
+You can also just call CMake to build it.
+
+```
+mkdir build
+cd build
+cmake ..
+```
 
 Building the editor requires OpenGL 3.0. The rest of the dependencies are included as git submodules (automatically cloned.)
+To build the editor, you'll need to pass `-DLIBPX_EDITOR=ON` to CMake.
+
+```
+mkdir build
+cd build
+cmake .. -DLIBPX_EDITOR=ON
+```
