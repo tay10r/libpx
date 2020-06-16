@@ -6,6 +6,7 @@
 
 #include "BucketTool.hpp"
 #include "PenTool.hpp"
+#include "RectTool.hpp"
 #include "StrokeTool.hpp"
 
 #include <libpx.hpp>
@@ -100,7 +101,7 @@ protected:
             currentTool.reset(createBucketTool(editor));
             break;
           case 3:
-            currentTool.reset();
+            currentTool.reset(createRectTool(editor));
             break;
           case 4:
             currentTool.reset();

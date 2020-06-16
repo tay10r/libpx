@@ -322,9 +322,9 @@ void setPixelSize(Line* line, int pixelSize) noexcept
   line->pixelSize = pixelSize;
 }
 
-void setLineColor(Line* line, float r, float g, float b, float a) noexcept
+void setColor(Line* line, float r, float g, float b) noexcept
 {
-  line->color = Color { r, g, b, a };
+  line->color = Color { r, g, b, 1 };
 }
 
 /// Represents a flood fill operation.
@@ -347,9 +347,9 @@ void setFillOrigin(Fill* fill, int x, int y) noexcept
   fill->origin = Vec2 { x, y };
 }
 
-void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept
+void setColor(Fill* fill, float r, float g, float b) noexcept
 {
-  fill->color = Color { r, g, b, a };
+  fill->color = Color { r, g, b, 1 };
 }
 
 /// Represents a quadrilateral shape.
@@ -359,13 +359,33 @@ void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept
 struct Quad final : public StrokeNode
 {
   /// The points making up the quadrilateral.
-  Vec2 points[4];
+  Vec2 points[4] { Vec2 { 0, 0 }, Vec2 { 1, 0 }, Vec2 { 1, 1 }, Vec2 { 0, 1 } };
 
   void accept(NodeAccessor& accessor) const noexcept override
   {
     accessor.access(*this);
   }
 };
+
+bool setPoint(Quad* quad, std::size_t index, int x, int y) noexcept
+{
+  if (index >= 4) {
+    return false;
+  } else {
+    quad->points[index] = Vec2 { x, y };
+    return true;
+  }
+}
+
+void setColor(Quad* quad, float r, float g, float b) noexcept
+{
+  quad->color = Color { r, g, b, 1 };
+}
+
+void setPixelSize(Quad* quad, int pixelSize) noexcept
+{
+  quad->pixelSize = absolute(pixelSize);
+}
 
 //================//
 // Section: Image //

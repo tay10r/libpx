@@ -33,7 +33,7 @@ int main()
 
   auto* fill = px::addFill(doc);
   px::setFillOrigin(fill, 64, 64);
-  px::setFillColor(fill, 0.3, 0.4, 0.6, 1.0);
+  px::setColor(fill, 0.3, 0.4, 0.6);
 
   auto* img = px::createImage(128, 128);
 

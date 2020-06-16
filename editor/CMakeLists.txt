@@ -22,6 +22,8 @@ add_executable(pxedit WIN32
   PenTool.cpp
   PoseMode.hpp
   PoseMode.cpp
+  RectTool.hpp
+  RectTool.cpp
   StrokeTool.hpp
   StrokeTool.cpp
   Tool.hpp

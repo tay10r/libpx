@@ -17,7 +17,7 @@ class PenTool final : public Tool
   /// The size of the pixels in the lines being drawn.
   int pixelSize = 1;
   /// The color being drawn with.
-  float color[4] { 0, 0, 0, 1 };
+  float color[3] { 0, 0, 0 };
   /// The current line being drawn.
   Line* line = nullptr;
 public:
@@ -41,13 +41,8 @@ public:
   {
     if (state) {
       line = addLine(getDocument());
-
       setPixelSize(line, pixelSize);
-
-      setLineColor(line, color[0],
-                         color[1],
-                         color[2],
-                         color[3]);
+      setColor(line, color[0], color[1], color[2]);
     } else {
       line = nullptr;
     }
@@ -60,7 +55,7 @@ public:
   {
     ImGui::SliderInt("Pixel Size", &pixelSize, 1, 8, "%d");
 
-    ImGui::ColorPicker4("Color", color);
+    ImGui::ColorPicker3("Color", color);
   }
 };
 

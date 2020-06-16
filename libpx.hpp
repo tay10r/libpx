@@ -13,7 +13,7 @@
 /// - @ref px::createDoc
 /// - @ref px::createImage
 ///
-/// Checkout @ref pxDocument and @ref pxImage for more
+/// Checkout @ref pxDocumentApi and @ref pxImageApi for more
 /// information on using those objects.
 ///
 /// Here's a code example that demonstrates the initialization and cleanup routines.
@@ -63,13 +63,25 @@ struct Image;
 struct Line;
 struct Quad;
 
-/// @defgroup pxDocument Document API
+/// @defgroup pxDocumentApi Document API
 ///
 /// @brief Contains all declarations related to the document object.
 
-/// @defgroup pxImage Image API
+/// @defgroup pxImageApi Image API
 ///
 /// @brief Contains all declarations related to the image API.
+
+/// @defgroup pxLineApi Line API
+///
+/// @brief Contains all declarations for lines.
+
+/// @defgroup pxFillApi Flood Fill API
+///
+/// @brief Contains all declarations for flood fills.
+
+/// @defgroup pxQuadApi Quad API
+///
+/// @brief Contains all declarations for quadrilaterals.
 
 /// Creates a new image instance.
 ///
@@ -81,7 +93,7 @@ struct Quad;
 ///
 /// @return A pointer to a new image instance.
 ///
-/// @ingroup pxImage
+/// @ingroup pxImageApi
 Image* createImage(std::size_t width, std::size_t height);
 
 /// Releases memory allocated by an image.
@@ -90,7 +102,7 @@ Image* createImage(std::size_t width, std::size_t height);
 /// returned by @ref createImage. This
 /// parameter may be a null pointer.
 ///
-/// @ingroup pxImage
+/// @ingroup pxImageApi
 void closeImage(Image* image) noexcept;
 
 /// Accesses the color buffer of an image.
@@ -101,7 +113,7 @@ void closeImage(Image* image) noexcept;
 /// The colors are in the format RGBA. The RGB
 /// components are premultiplied.
 ///
-/// @ingroup pxImage
+/// @ingroup pxImageApi
 const float* getColorBuffer(const Image* image) noexcept;
 
 /// Accesses the width of an image.
@@ -110,7 +122,7 @@ const float* getColorBuffer(const Image* image) noexcept;
 ///
 /// @return The width of the image, in pixels.
 ///
-/// @ingroup pxImage
+/// @ingroup pxImageApi
 std::size_t getImageWidth(const Image* image) noexcept;
 
 /// Accesses the height of an image.
@@ -119,7 +131,7 @@ std::size_t getImageWidth(const Image* image) noexcept;
 ///
 /// @return The height of the image, in pixels.
 ///
-/// @ingroup pxImage
+/// @ingroup pxImageApi
 std::size_t getImageHeight(const Image* image) noexcept;
 
 /// Resizes an image.
@@ -130,21 +142,21 @@ std::size_t getImageHeight(const Image* image) noexcept;
 /// @param width The new width to assign the image.
 /// @param height The new height to assign the image.
 ///
-/// @ingroup pxImage
+/// @ingroup pxImageApi
 void resizeImage(Image* image, std::size_t width, std::size_t height);
 
 /// Creates a new document instance.
 ///
 /// @return A new document instance.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 Document* createDoc();
 
 /// Releases memory allocated by a document.
 ///
 /// @param doc The document to release the memory of.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 void closeDoc(Document* doc) noexcept;
 
 /// Adds a line to a document.
@@ -153,7 +165,7 @@ void closeDoc(Document* doc) noexcept;
 /// The line is owned by the document and does
 /// not need to be manually destroyed.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 Line* addLine(Document* doc);
 
 /// Adds a fill operation to the document.
@@ -162,7 +174,7 @@ Line* addLine(Document* doc);
 ///
 /// @return A pointer to a new fill operation.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 Fill* addFill(Document* doc);
 
 /// Adds a quadrilateral to the document.
@@ -171,7 +183,7 @@ Fill* addFill(Document* doc);
 ///
 /// @return A pointer to the new quad structure.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 Quad* addQuad(Document* doc);
 
 /// Gets the width of the document, in pixels.
@@ -180,7 +192,7 @@ Quad* addQuad(Document* doc);
 ///
 /// @return The width of the document.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 std::size_t getDocWidth(const Document* doc) noexcept;
 
 /// Gets the height of the document, in pixels.
@@ -189,7 +201,7 @@ std::size_t getDocWidth(const Document* doc) noexcept;
 ///
 /// @return The height of the document.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 std::size_t getDocHeight(const Document* doc) noexcept;
 
 /// Resizes the document.
@@ -201,12 +213,12 @@ std::size_t getDocHeight(const Document* doc) noexcept;
 /// @param width The width to assign the document, in terms of pixels.
 /// @param height The height to assign the document, in terms of pixels.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept;
 
 /// Sets the background color of a document.
 ///
-/// @ingroup pxDocument
+/// @ingroup pxDocumentApi
 void setBackground(Document* doc, float r, float g, float b, float a) noexcept;
 
 /// Sets the origin of a fill operation.
@@ -214,7 +226,17 @@ void setBackground(Document* doc, float r, float g, float b, float a) noexcept;
 /// @param fill The fill operation to set the origin of.
 /// @param x The X position of the origin.
 /// @param y The Y position of the origin.
+///
+/// @ingroup pxFillApi
 void setFillOrigin(Fill* fill, int x, int y) noexcept;
+
+/// Sets the color of a line.
+///
+/// @param line The line to set the color of.
+/// A new line can be created by calling @ref addLine
+///
+/// @ingroup pxLineApi
+void setColor(Line* line, float r, float g, float b) noexcept;
 
 /// Sets the color of the fill operation.
 ///
@@ -222,14 +244,24 @@ void setFillOrigin(Fill* fill, int x, int y) noexcept;
 /// @param r The red channel value of the fill operation (0 to 1)
 /// @param g The green channel value of the fill operation (0 to 1)
 /// @param b The blue channel value of the fill operation (0 to 1)
-/// @param a The alpha channel value of the fill operation (0 to 1)
-void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept;
+///
+/// @ingroup pxFillApi
+void setColor(Fill* fill, float r, float g, float b) noexcept;
+
+/// Sets the stroke color of a quadrilateral.
+///
+/// @param quad The quadrilateral to modify the color of.
+///
+/// @ingroup pxQuadApi
+void setColor(Quad* quad, float r, float g, float b) noexcept;
 
 /// Adds a point to a line.
 ///
 /// @param line The line to add the point to.
 /// @param x The X coordinate of the point to add.
 /// @param y The Y coordinate of the point to add.
+///
+/// @ingroup pxLineApi
 void addPoint(Line* line, int x, int y);
 
 /// Sets the position of an existing point in the line.
@@ -241,13 +273,18 @@ void addPoint(Line* line, int x, int y);
 ///
 /// @return True on success, false on failure.
 /// This function returns false of @p index is out of bounds.
+///
+/// @ingroup pxLineApi
 bool setPoint(Line* line, std::size_t index, int x, int y) noexcept;
 
-/// Sets the color of a line.
+/// Sets a point within a quadrilateral.
 ///
-/// @param line The line to set the color of.
-/// A new line can be created by calling @ref addLine
-void setLineColor(Line* line, float r, float g, float b, float a) noexcept;
+/// @param quad The quadrilateral to set the point of.
+/// @param x The X coordinate to assign.
+/// @param y The Y coordinate to assign.
+///
+/// @return True on success, false of @p index is out of bounds.
+bool setPoint(Quad* quad, std::size_t index, int x, int y) noexcept;
 
 /// Sets the pixel size of a line.
 ///
@@ -257,7 +294,16 @@ void setLineColor(Line* line, float r, float g, float b, float a) noexcept;
 /// @param pixelSize The pixel size to assign. This
 /// acts as both the width and height of the pixel,
 /// since all pixels are squares.
+///
+/// @ingroup pxLineApi
 void setPixelSize(Line* line, int pixelSize) noexcept;
+
+/// Sets the pixel size of a quadrilateral.
+///
+/// @param quad The quad to modify the pixel size of.
+///
+/// @ingroup pxQuadApi
+void setPixelSize(Quad* quad, int pixelSize) noexcept;
 
 /// Renders the document onto a color buffer.
 ///

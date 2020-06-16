@@ -52,7 +52,7 @@ public:
 
     setPixelSize(line, pixelSize);
 
-    setLineColor(line, color[0], color[1], color[2], color[3]);
+    setColor(line, color[0], color[1], color[2]);
 
     addPoint(line, pos[0], pos[1]);
     addPoint(line, pos[0], pos[1]);
