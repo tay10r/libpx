@@ -275,6 +275,8 @@ struct Node
   /// Allows a node accessor class access
   /// to the derived node type.
   virtual void accept(NodeAccessor& accessor) const noexcept = 0;
+  /// Copies the derived node.
+  virtual Node* copy() const = 0;
 };
 
 /// This is the base of any class that has
@@ -299,6 +301,11 @@ struct Ellipse final : public StrokeNode
   void accept(NodeAccessor& accessor) const noexcept override
   {
     accessor.access(*this);
+  }
+
+  Node* copy() const override
+  {
+    return new Ellipse(*this);
   }
 };
 
@@ -347,6 +354,11 @@ struct Fill final : public Node
   {
     accessor.access(*this);
   }
+
+  Node* copy() const override
+  {
+    return new Fill(*this);
+  }
 };
 
 void setFillOrigin(Fill* fill, int x, int y) noexcept
@@ -368,6 +380,11 @@ struct Line final : public StrokeNode
   void accept(NodeAccessor& accessor) const noexcept override
   {
     accessor.access(*this);
+  }
+
+  Node* copy() const override
+  {
+    return new Line(*this);
   }
 };
 
@@ -408,6 +425,10 @@ struct Quad final : public StrokeNode
   void accept(NodeAccessor& accessor) const noexcept override
   {
     accessor.access(*this);
+  }
+  Node* copy() const override
+  {
+    return new Quad(*this);
   }
 };
 
@@ -510,6 +531,21 @@ struct Document final
   std::size_t height = 64;
   /// The default background color.
   Color background = white();
+  /// Makes a new document.
+  Document() {}
+  /// Makes a copy of the document.
+  ///
+  /// @param other The document to copy.
+  Document(const Document& other)
+  {
+    width = other.width;
+    height = other.height;
+    background = other.background;
+
+    for (const auto& node : other.nodes) {
+      nodes.emplace_back(node->copy());
+    }
+  }
 };
 
 Document* createDoc()
@@ -520,6 +556,11 @@ Document* createDoc()
 void closeDoc(Document* doc) noexcept
 {
   delete doc;
+}
+
+Document* copyDoc(const Document* doc)
+{
+  return new Document(*doc);
 }
 
 Ellipse* addEllipse(Document* doc)

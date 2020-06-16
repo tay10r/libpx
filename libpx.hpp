@@ -161,6 +161,17 @@ Document* createDoc();
 /// @ingroup pxDocumentApi
 void closeDoc(Document* doc) noexcept;
 
+/// Copies an existing document.
+///
+/// @exception std::bad_alloc If a memory allocation fails.
+///
+/// @param other The document to copy.
+///
+/// @return A pointer to a copy of @p other.
+///
+/// @ingroup pxDocumentApi
+Document* copyDoc(const Document* other);
+
 /// Adds a line to a document.
 ///
 /// @return A pointer to a new line instance.

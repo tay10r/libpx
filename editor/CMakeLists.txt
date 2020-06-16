@@ -24,6 +24,10 @@ add_executable(pxedit WIN32
   EllipseTool.cpp
   ExportDialog.hpp
   ExportDialog.cpp
+  History.hpp
+  History.cpp
+  ImageIO.hpp
+  ImageIO.cpp
   Mode.hpp
   PenTool.hpp
   PenTool.cpp
@@ -32,9 +36,7 @@ add_executable(pxedit WIN32
   RectTool.hpp
   RectTool.cpp
   StrokeTool.hpp
-  StrokeTool.cpp
-  ImageIO.hpp
-  ImageIO.cpp)
+  StrokeTool.cpp)
 
 target_link_libraries(pxedit PRIVATE px pfd glfw glm OpenGL::OpenGL imgui GLEW::GLEW stb)
 

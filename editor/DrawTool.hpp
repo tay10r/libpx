@@ -42,6 +42,9 @@ public:
   /// Renders the tool properties.
   virtual void renderProperties() {}
 protected:
+  /// Creates a snapshot of the document
+  /// for editing purposes.
+  void snapshotDoc();
   /// Gets a pointer to the document.
   Document* getDocument() noexcept;
   /// Gets a pointer to the document.

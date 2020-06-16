@@ -22,6 +22,7 @@
 #include <cstdlib>
 
 #include "Dialog.hpp"
+#include "History.hpp"
 #include "ImageIO.hpp"
 #include "Mode.hpp"
 
@@ -51,8 +52,10 @@ class EditorImpl final
   const float zoomFactor = 1.5f;
   /// The current zoom factor.
   float zoom = 1;
-  /// The document being edited.
-  Document* doc = nullptr;
+  /// The document modification history.
+  /// This is where the document pointer
+  /// is retrived from.
+  History history;
   /// The image being rendered to.
   Image* image = nullptr;
   /// The current dialog (usually null).
@@ -87,9 +90,6 @@ class EditorImpl final
 
 EditorImpl::~EditorImpl()
 {
-  if (doc) {
-    closeDoc(doc);
-  }
   if (image) {
     closeImage(image);
   }
@@ -104,6 +104,7 @@ glm::mat4 EditorImpl::calcTransform() noexcept
   int fbHeight = 0;
   glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
 
+  const auto* doc = history.getDocument();
   auto docWidth  = getDocWidth(doc);
   auto docHeight = getDocHeight(doc);
 
@@ -198,9 +199,9 @@ GLuint setupShader(const char* name, const char* source, GLenum shaderType)
 
 Editor::Editor() : impl(new EditorImpl())
 {
-  impl->doc = createDoc();
+  const auto* doc = impl->history.getDocument();
 
-  impl->image = createImage(getDocWidth(impl->doc), getDocHeight(impl->doc));
+  impl->image = createImage(getDocWidth(doc), getDocHeight(doc));
 
   impl->mode = std::unique_ptr<Mode>(createDrawMode(this));
 }
@@ -240,9 +241,11 @@ bool Editor::createWindow()
   return true;
 }
 
-Document* Editor::getDocument() noexcept { return impl->doc; }
+Document* Editor::getDocument() noexcept { return impl->history.getDocument(); }
 
-const Document* Editor::getDocument() const noexcept { return impl->doc; }
+const Document* Editor::getDocument() const noexcept { return impl->history.getDocument(); }
+
+void Editor::snapshotDoc() { impl->history.snapshot(); }
 
 const Image* Editor::getImage() const noexcept { return impl->image; }
 
@@ -381,8 +384,13 @@ void Editor::renderEditMenu()
 {
   if (ImGui::BeginMenu("Edit", true)) {
 
-    ImGui::MenuItem("Undo");
-    ImGui::MenuItem("Redo");
+    if (ImGui::MenuItem("Undo")) {
+      impl->history.undo();
+    }
+
+    if (ImGui::MenuItem("Redo")) {
+      impl->history.redo();
+    }
 
     if (ImGui::BeginMenu("Mode")) {
 
@@ -461,14 +469,16 @@ void Editor::renderDocument()
 {
   /* Get metrics */
 
-  auto docWidth  = getDocWidth(impl->doc);
-  auto docHeight = getDocHeight(impl->doc);
+  const auto* doc = getDocument();
+
+  auto docWidth  = getDocWidth(doc);
+  auto docHeight = getDocHeight(doc);
 
   /* Render document to image */
 
   resizeImage(impl->image, docWidth, docHeight);
 
-  render(impl->doc, impl->image);
+  render(doc, impl->image);
 
   /* Draw onto window */
 
@@ -530,8 +540,10 @@ void Editor::mouseMotion(double x, double y)
     return;
   }
 
-  x = ((x - min.x) / size.x) * float(getDocWidth(impl->doc));
-  y = ((y - min.y) / size.y) * float(getDocHeight(impl->doc));
+  const auto* doc = getDocument();
+
+  x = ((x - min.x) / size.x) * float(getDocWidth(doc));
+  y = ((y - min.y) / size.y) * float(getDocHeight(doc));
 
   impl->mode->mouseMotion(unsigned(x), unsigned(y));
 }

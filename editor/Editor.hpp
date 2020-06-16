@@ -45,6 +45,10 @@ public:
   Document* getDocument() noexcept;
   /// Accesses a pointer to the document.
   const Document* getDocument() const noexcept;
+  /// Creates a "snapshot" of the document in the edit
+  /// history. This is done when a modification
+  /// is about to be made.
+  void snapshotDoc();
   /// Gets a pointer to the last rendered image.
   ///
   /// @return A pointer to the last rendered image.

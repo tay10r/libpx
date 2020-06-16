@@ -28,6 +28,8 @@ public:
       return;
     }
 
+    snapshotDoc();
+
     const auto* color = getPrimaryColor();
     const auto* cursor = getCursor();
 

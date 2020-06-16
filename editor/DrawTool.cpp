@@ -4,6 +4,11 @@
 
 namespace px {
 
+void DrawTool::snapshotDoc()
+{
+  editor->snapshotDoc();
+}
+
 Document* DrawTool::getDocument() noexcept
 {
   return editor->getDocument();
