@@ -5,6 +5,7 @@
 #include "Mode.hpp"
 
 #include "BucketTool.hpp"
+#include "ColorPickerTool.hpp"
 #include "EllipseTool.hpp"
 #include "PenTool.hpp"
 #include "RectTool.hpp"
@@ -112,7 +113,7 @@ protected:
             currentTool.reset(createEllipseTool(editor, getDrawState()));
             break;
           case 5:
-            currentTool.reset();
+            currentTool.reset(createColorPickerTool(editor, getDrawState()));
             break;
         }
       }

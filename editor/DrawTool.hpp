@@ -9,6 +9,7 @@ struct DrawState;
 
 class Document;
 class Editor;
+class Image;
 
 /// The base of any tool that can be used
 /// in the editor in draw mode.
@@ -40,11 +41,13 @@ public:
   virtual void rightClick(bool state) { (void) state; }
   /// Renders the tool properties.
   virtual void renderProperties() {}
-  /// Accesses a reference to the document.
-  Document* getDocument() noexcept;
-  /// Accesses a reference to the document.
-  const Document* getDocument() const noexcept;
 protected:
+  /// Gets a pointer to the document.
+  Document* getDocument() noexcept;
+  /// Gets a pointer to the document.
+  const Document* getDocument() const noexcept;
+  /// Gets a pointer to the last rendered image.
+  const Image* getImage() const noexcept;
   /// Gets a reference to the draw state.
   inline const DrawState& getDrawState() const noexcept { return drawState; }
   /// Gets a reference to the draw state.

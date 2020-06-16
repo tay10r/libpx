@@ -64,10 +64,6 @@ struct Image;
 struct Line;
 struct Quad;
 
-/// @defgroup pxDocumentApi Document API
-///
-/// @brief Contains all declarations related to the document object.
-
 /// @defgroup pxImageApi Image API
 ///
 /// @brief Contains all declarations related to the image API.
@@ -105,6 +101,19 @@ void closeImage(Image* image) noexcept;
 /// @ingroup pxImageApi
 const float* getColorBuffer(const Image* image) noexcept;
 
+/// Gets a color from a specific pixel on the image.
+///
+/// @param image The image to get the color from.
+/// @param x The X coordinate of the pixel.
+/// @param y The Y coordinate of the pixel.
+/// @param rgba A pointer to a 4-float storage variable that gets the color.
+/// The resultant RGB components are not pre-multiplied.
+///
+/// @return True on success, false of @p x or @p y were out of bounds.
+///
+/// @ingroup pxImageApi
+bool getColor(const Image* image, std::size_t x, std::size_t y, float* rgba) noexcept;
+
 /// Accesses the width of an image.
 ///
 /// @param image The image to get the width of.
@@ -133,6 +142,10 @@ std::size_t getImageHeight(const Image* image) noexcept;
 ///
 /// @ingroup pxImageApi
 void resizeImage(Image* image, std::size_t width, std::size_t height);
+
+/// @defgroup pxDocumentApi Document API
+///
+/// @brief Contains all declarations related to the document object.
 
 /// Creates a new document instance.
 ///

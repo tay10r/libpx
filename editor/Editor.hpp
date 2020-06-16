@@ -5,6 +5,7 @@ namespace px {
 
 class Document;
 class EditorImpl;
+class Image;
 
 /// Represents the application as a whole.
 /// Contains the main window used to interface
@@ -44,6 +45,10 @@ public:
   Document* getDocument() noexcept;
   /// Accesses a pointer to the document.
   const Document* getDocument() const noexcept;
+  /// Gets a pointer to the last rendered image.
+  ///
+  /// @return A pointer to the last rendered image.
+  const Image* getImage() const noexcept;
   /// Handles mouse motion.
   ///
   /// @param x The X coordinate of the new mouse position.

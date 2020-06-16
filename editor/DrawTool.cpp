@@ -14,4 +14,9 @@ const Document* DrawTool::getDocument() const noexcept
   return editor->getDocument();
 }
 
+const Image* DrawTool::getImage() const noexcept
+{
+  return editor->getImage();
+}
+
 } // namespace px

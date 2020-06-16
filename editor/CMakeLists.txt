@@ -7,6 +7,8 @@ add_executable(pxedit WIN32
   main.cpp
   BucketTool.hpp
   BucketTool.cpp
+  ColorPickerTool.hpp
+  ColorPickerTool.cpp
   Dialog.hpp
   Dialog.cpp
   DrawMode.hpp

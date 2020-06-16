@@ -244,6 +244,8 @@ Document* Editor::getDocument() noexcept { return impl->doc; }
 
 const Document* Editor::getDocument() const noexcept { return impl->doc; }
 
+const Image* Editor::getImage() const noexcept { return impl->image; }
+
 bool Editor::initGlData()
 {
   glGenTextures(1, &impl->texture);

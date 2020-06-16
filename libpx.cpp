@@ -466,6 +466,24 @@ const float* getColorBuffer(const Image* image) noexcept
   return image->colorBuffer.data();
 }
 
+bool getColor(const Image* image, std::size_t x, std::size_t y, float* rgba) noexcept
+{
+  if ((x >= image->width)
+   || (y >= image->height)) {
+    return false;
+  }
+
+  const auto* src = &image->colorBuffer[((y * image->width) + x) * 4];
+
+  // TODO : Restore RGB before multiply
+  rgba[0] = src[0];
+  rgba[1] = src[1];
+  rgba[2] = src[2];
+  rgba[3] = src[3];
+
+  return true;
+}
+
 std::size_t getImageWidth(const Image* image) noexcept { return image->width; }
 
 std::size_t getImageHeight(const Image* image) noexcept { return image->height; }
