@@ -536,6 +536,14 @@ std::size_t getDocWidth(const Document* doc) noexcept { return doc->width; }
 
 std::size_t getDocHeight(const Document* doc) noexcept { return doc->height; }
 
+void getBackground(const Document* doc, float* bg) noexcept
+{
+  bg[0] = doc->background[0];
+  bg[1] = doc->background[1];
+  bg[2] = doc->background[2];
+  bg[3] = doc->background[3];
+}
+
 void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept
 {
   doc->width = width;

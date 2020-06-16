@@ -203,6 +203,15 @@ std::size_t getDocWidth(const Document* doc) noexcept;
 /// @ingroup pxDocumentApi
 std::size_t getDocHeight(const Document* doc) noexcept;
 
+/// Gets the background color of the document.
+///
+/// @param doc The document to get the background color of.
+/// @param bg A pointer to the float array to store the
+/// background color into. This must be able to hold four
+/// floats, since the background color is an ARGB vector.
+/// The RGB components are not pre multiplied in this case.
+void getBackground(const Document* doc, float* bg) noexcept;
+
 /// Resizes the document.
 /// Internally, all this does is change the
 /// width and height parameters of the document.

@@ -141,6 +141,14 @@ protected:
       if (!sizeLock) {
         resizeDoc(doc, w, h);
       }
+
+      float bg[4];
+
+      getBackground(doc, bg);
+
+      if (ImGui::ColorEdit4("Background Color", bg)) {
+        setBackground(doc, bg[0], bg[1], bg[2], bg[3]);
+      }
     }
 
     ImGui::Text("Cursor: (%u, %u)", cursor[0], cursor[1]);
