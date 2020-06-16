@@ -59,16 +59,18 @@ bool savePPM(const char* filename, unsigned w, unsigned h, const float* data)
 
   fprintf(file, "P6\n%u %u\n255\n", w, h);
 
+  using Byte = unsigned char;
+
   for (unsigned y = 0; y < h; y++) {
 
     for (unsigned x = 0; x < w; x++) {
 
       const float* src = data + ((y * w) + x) * 4;
 
-      unsigned char color[3] {
-        src[0] * src[3] * 255,
-        src[1] * src[3] * 255,
-        src[2] * src[3] * 255
+      Byte color[3] {
+        Byte(src[0] * src[3] * 255),
+        Byte(src[1] * src[3] * 255),
+        Byte(src[2] * src[3] * 255)
       };
 
       fwrite(color, 3, 1, file);
