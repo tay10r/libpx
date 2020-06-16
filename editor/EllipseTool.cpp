@@ -1,7 +1,7 @@
 #include "EllipseTool.hpp"
 
+#include "DrawTool.hpp"
 #include "Editor.hpp"
-#include "Tool.hpp"
 
 #include <libpx.hpp>
 
@@ -12,31 +12,22 @@ namespace px {
 namespace {
 
 /// Used for drawing an ellipse.
-class EllipseTool final : public Tool
+class EllipseTool final : public DrawTool
 {
-  /// The color being drawn with.
-  float color[3] { 0, 0, 0 };
-  /// The pixel size to assign the ellipse.
-  int pixelSize = 1;
   /// A pointer to the ellipse being drawn.
   Ellipse* ellipse = nullptr;
   /// The starting position of the ellipse.
   unsigned start[2] { 0, 0 };
-  /// The last known position of the ellipse.
-  unsigned pos[2] { 0, 0 };
 public:
   /// Constructs a new ellipse tool instance.
   ///
   /// @param e A pointer to the editor instance.
-  EllipseTool(Editor* e) : Tool(e) {}
+  EllipseTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
   /// If an ellipse is active then this function
   /// will resize it to fit the area that the mouse
   /// is dragged over.
   void mouseMotion(unsigned x, unsigned y) override
   {
-    pos[0] = x;
-    pos[1] = y;
-
     if (!ellipse) {
       return;
     }
@@ -53,6 +44,9 @@ public:
       return;
     }
 
+    const auto* pos = getCursor();
+    const auto* color = getPrimaryColor();
+
     start[0] = pos[0];
     start[1] = pos[1];
 
@@ -60,24 +54,15 @@ public:
 
     setColor(ellipse, color[0], color[1], color[2]);
 
-    setPixelSize(ellipse, pixelSize);
-  }
-  /// Just a stub.
-  void rightClick(bool) override { }
-  /// Renders the tool properties.
-  void renderProperties() override
-  {
-    ImGui::SliderInt("Pixel Size", &pixelSize, 1, 8, "%d");
-
-    ImGui::ColorPicker3("Color", color);
+    setPixelSize(ellipse, getPixelSize());
   }
 };
 
 } // namespace
 
-Tool* createEllipseTool(Editor* editor)
+DrawTool* createEllipseTool(Editor* editor, const DrawState& ds)
 {
-  return new EllipseTool(editor);
+  return new EllipseTool(editor, ds);
 }
 
 } // namespace px

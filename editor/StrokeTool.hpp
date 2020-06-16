@@ -3,8 +3,10 @@
 
 namespace px {
 
+struct DrawState;
+
+class DrawTool;
 class Editor;
-class Tool;
 
 /// Creates a new instance of the stroke tool.
 ///
@@ -12,7 +14,7 @@ class Tool;
 /// the tool is being created for.
 ///
 /// @return A new stroke tool instance.
-Tool* createStrokeTool(Editor* editor);
+DrawTool* createStrokeTool(Editor* editor, const DrawState& ds);
 
 } // namespace px
 

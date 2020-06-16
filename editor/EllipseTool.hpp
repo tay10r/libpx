@@ -3,8 +3,10 @@
 
 namespace px {
 
+struct DrawState;
+
+class DrawTool;
 class Editor;
-class Tool;
 
 /// Creates a new instance of the ellipse tool.
 ///
@@ -12,7 +14,7 @@ class Tool;
 /// the tool is being created for.
 ///
 /// @return A new ellipse tool instance.
-Tool* createEllipseTool(Editor* editor);
+DrawTool* createEllipseTool(Editor* editor, const DrawState& ds);
 
 } // namespace px
 

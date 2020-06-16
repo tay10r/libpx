@@ -1,8 +1,8 @@
 #include "DrawMode.hpp"
 
+#include "DrawTool.hpp"
 #include "Editor.hpp"
 #include "Mode.hpp"
-#include "Tool.hpp"
 
 #include "BucketTool.hpp"
 #include "EllipseTool.hpp"
@@ -26,20 +26,24 @@ class DrawMode final : public Mode
   /// A pointer to the editor hosting the mode.
   Editor* editor = nullptr;
   /// The currently selected tool.
-  std::unique_ptr<Tool> currentTool;
+  std::unique_ptr<DrawTool> currentTool;
   /// The index of the currently selected tool.
   int toolIndex = 0;
   /// Whether or not the document size is locked.
   bool sizeLock = true;
   /// The last known cursor position.
-  unsigned cursor[2] { 0, 0 };
+  int cursor[2] { 0, 0 };
+  /// The current primary color.
+  float primaryColor[3] { 0, 0, 0 };
+  /// The current pixel size.
+  int pixelSize = 1;
 public:
   /// Constructs a new instance of the draw mode.
   ///
   /// @param e A pointer to the editor that the draw mode is for.
   DrawMode(Editor* e) : editor(e)
   {
-    currentTool = std::unique_ptr<Tool>(createPenTool(e));
+    currentTool = std::unique_ptr<DrawTool>(createPenTool(e, getDrawState()));
   }
   /// Passes the left click state change
   /// to the currently active tool.
@@ -93,19 +97,19 @@ protected:
       if (hit) {
         switch (toolIndex) {
           case 0:
-            currentTool.reset(createPenTool(editor));
+            currentTool.reset(createPenTool(editor, getDrawState()));
             break;
           case 1:
-            currentTool.reset(createStrokeTool(editor));
+            currentTool.reset(createStrokeTool(editor, getDrawState()));
             break;
           case 2:
-            currentTool.reset(createBucketTool(editor));
+            currentTool.reset(createBucketTool(editor, getDrawState()));
             break;
           case 3:
-            currentTool.reset(createRectTool(editor));
+            currentTool.reset(createRectTool(editor, getDrawState()));
             break;
           case 4:
-            currentTool.reset(createEllipseTool(editor));
+            currentTool.reset(createEllipseTool(editor, getDrawState()));
             break;
           case 5:
             currentTool.reset();
@@ -118,6 +122,10 @@ protected:
       if (currentTool) {
         currentTool->renderProperties();
       }
+
+      ImGui::InputInt("Pixel Size", &pixelSize);
+
+      ImGui::ColorEdit3("Primary Color", primaryColor);
     }
 
     if (ImGui::CollapsingHeader("Document Properties", false)) {
@@ -138,6 +146,15 @@ protected:
     ImGui::Text("Cursor: (%u, %u)", cursor[0], cursor[1]);
 
     ImGui::End();
+  }
+  /// Gets a draw state instance to be
+  /// passed to 
+  DrawState getDrawState() noexcept {
+    return DrawState {
+      primaryColor,
+      &pixelSize,
+      cursor
+    };
   }
 };
 

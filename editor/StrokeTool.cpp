@@ -1,38 +1,27 @@
 #include "StrokeTool.hpp"
 
+#include "DrawTool.hpp"
 #include "Editor.hpp"
-#include "Tool.hpp"
 
 #include <libpx.hpp>
-
-#include <imgui.h>
 
 namespace px {
 
 namespace {
 
 /// Used for drawing a single line.
-class StrokeTool final : public Tool
+class StrokeTool final : public DrawTool
 {
-  /// The size of the line being drawn.
-  int pixelSize = 1;
-  /// The color of the line being drawn.
-  float color[4] { 0, 0, 0, 1 };
   /// The current line being drawn.
   Line* line = nullptr;
-  /// The last recorded cursor position.
-  unsigned pos[2] { 0, 0 };
 public:
   /// Constructs a new instance of the stroke tool.
   ///
   /// @param e A pointer to the editor instance that the tool is for.
-  StrokeTool(Editor* e) : Tool(e) {}
+  StrokeTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
   /// Handles mouse movement.
   void mouseMotion(unsigned x, unsigned y) override
   {
-    pos[0] = x;
-    pos[1] = y;
-
     if (!line) {
       return;
     }
@@ -48,31 +37,23 @@ public:
       return;
     }
 
+    const auto* pos = getCursor();
+    const auto* color = getPrimaryColor();
+
     line = addLine(getDocument());
 
-    setPixelSize(line, pixelSize);
-
+    setPixelSize(line, getPixelSize());
     setColor(line, color[0], color[1], color[2]);
-
     addPoint(line, pos[0], pos[1]);
     addPoint(line, pos[0], pos[1]);
-  }
-  /// Just a stub.
-  void rightClick(bool)override { }
-  /// Renders the tool properties.
-  void renderProperties() override
-  {
-    ImGui::SliderInt("Pixel Size", &pixelSize, 1, 8, "%d");
-
-    ImGui::ColorPicker4("Color", color);
   }
 };
 
 } // namespace
 
-Tool* createStrokeTool(Editor* e)
+DrawTool* createStrokeTool(Editor* e, const DrawState& ds)
 {
-  return new StrokeTool(e);
+  return new StrokeTool(e, ds);
 }
 
 } // namespace px

@@ -3,8 +3,10 @@
 
 namespace px {
 
+struct DrawState;
+
+class DrawTool;
 class Editor;
-class Tool;
 
 /// Creates a new instance of the pen tool.
 ///
@@ -12,7 +14,7 @@ class Tool;
 /// the tool is being created for.
 ///
 /// @return A new pen tool instance.
-Tool* createPenTool(Editor* editor);
+DrawTool* createPenTool(Editor* editor, const DrawState& ds);
 
 } // namespace px
 

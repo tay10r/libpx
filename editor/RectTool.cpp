@@ -1,7 +1,7 @@
 #include "RectTool.hpp"
 
+#include "DrawTool.hpp"
 #include "Editor.hpp"
-#include "Tool.hpp"
 
 #include <libpx.hpp>
 
@@ -12,14 +12,8 @@ namespace px {
 namespace {
 
 /// Used for drawing a rectangle.
-class RectTool final : public Tool
+class RectTool final : public DrawTool
 {
-  /// The size of the rectangle being drawn.
-  int pixelSize = 1;
-  /// The color of the rectangle being drawn.
-  float color[3] { 0, 0, 0 };
-  /// The last recorded cursor position.
-  unsigned pos[2] { 0, 0 };
   /// The starting point of the quad.
   unsigned startPos[2] { 0, 0 };
   /// If not null then points to the
@@ -29,13 +23,10 @@ public:
   /// Constructs a new instance of the stroke tool.
   ///
   /// @param e A pointer to the editor instance that the tool is for.
-  RectTool(Editor* e) : Tool(e) {}
+  RectTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
   /// Handles mouse movement.
   void mouseMotion(unsigned x, unsigned y) override
   {
-    pos[0] = x;
-    pos[1] = y;
-
     if (!rect) {
       return;
     }
@@ -60,31 +51,25 @@ public:
       return;
     }
 
+    const auto* pos = getCursor();
+    const auto* color = getPrimaryColor();
+
     rect = addQuad(getDocument());
 
     setPoint(rect, 0, pos[0], pos[1]);
-    setPixelSize(rect, pixelSize);
+    setPixelSize(rect, getPixelSize());
     setColor(rect, color[0], color[1], color[2]);
 
     startPos[0] = pos[0];
     startPos[1] = pos[1];
   }
-  /// Just a stub.
-  void rightClick(bool) override { }
-  /// Renders the tool properties.
-  void renderProperties() override
-  {
-    ImGui::SliderInt("Pixel Size", &pixelSize, 1, 8, "%d");
-
-    ImGui::ColorPicker3("Color", color);
-  }
 };
 
 } // namespace
 
-Tool* createRectTool(Editor* e)
+DrawTool* createRectTool(Editor* e, const DrawState& ds)
 {
-  return new RectTool(e);
+  return new RectTool(e, ds);
 }
 
 } // namespace px

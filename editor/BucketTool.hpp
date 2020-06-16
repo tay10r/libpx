@@ -3,8 +3,10 @@
 
 namespace px {
 
+struct DrawState;
+
+class DrawTool;
 class Editor;
-class Tool;
 
 /// Creates a new instance of the bucket tool.
 ///
@@ -12,7 +14,7 @@ class Tool;
 /// the tool is being created for.
 ///
 /// @return A new bucket tool instance.
-Tool* createBucketTool(Editor* editor);
+DrawTool* createBucketTool(Editor* editor, const DrawState& ds);
 
 } // namespace px
 

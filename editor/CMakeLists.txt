@@ -11,6 +11,9 @@ add_executable(pxedit WIN32
   Dialog.cpp
   DrawMode.hpp
   DrawMode.cpp
+  DrawState.hpp
+  DrawTool.hpp
+  DrawTool.cpp
   EditMode.hpp
   EditMode.cpp
   Editor.hpp
@@ -28,7 +31,6 @@ add_executable(pxedit WIN32
   RectTool.cpp
   StrokeTool.hpp
   StrokeTool.cpp
-  Tool.hpp
   ImageIO.hpp
   ImageIO.cpp)
 

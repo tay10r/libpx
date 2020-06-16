@@ -1,7 +1,7 @@
 #include "PenTool.hpp"
 
+#include "DrawTool.hpp"
 #include "Editor.hpp"
-#include "Tool.hpp"
 
 #include <libpx.hpp>
 
@@ -12,19 +12,15 @@ namespace px {
 namespace {
 
 /// Used for freestyle drawing.
-class PenTool final : public Tool
+class PenTool final : public DrawTool
 {
-  /// The size of the pixels in the lines being drawn.
-  int pixelSize = 1;
-  /// The color being drawn with.
-  float color[3] { 0, 0, 0 };
   /// The current line being drawn.
   Line* line = nullptr;
 public:
   /// Constructs a new pen tool instance.
   ///
   /// @param e A pointer to the editor instance.
-  PenTool(Editor* e) : Tool(e) {}
+  PenTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
   /// Handles mouse motion.
   /// If the left mouse button is clicked,
   /// the point passed to this function is
@@ -39,31 +35,27 @@ public:
   /// If the button is being pressed, a new path is started.
   void leftClick(bool state) override
   {
-    if (state) {
-      line = addLine(getDocument());
-      setPixelSize(line, pixelSize);
-      setColor(line, color[0], color[1], color[2]);
-    } else {
+    if (!state) {
       line = nullptr;
+      return;
     }
-  }
-  void rightClick(bool) override
-  {
-  }
-  /// Renders the tool properties.
-  void renderProperties() override
-  {
-    ImGui::SliderInt("Pixel Size", &pixelSize, 1, 8, "%d");
 
-    ImGui::ColorPicker3("Color", color);
+    const auto* color = getPrimaryColor();
+    const auto* pos = getCursor();
+
+    line = addLine(getDocument());
+
+    setPixelSize(line, getPixelSize());
+    addPoint(line, pos[0], pos[1]);
+    setColor(line, color[0], color[1], color[2]);
   }
 };
 
 } // namespace
 
-Tool* createPenTool(Editor* editor)
+DrawTool* createPenTool(Editor* editor, const DrawState& ds)
 {
-  return new PenTool(editor);
+  return new PenTool(editor, ds);
 }
 
 } // namespace px
