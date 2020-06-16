@@ -15,7 +15,7 @@ namespace {
 class PenTool final : public Tool
 {
   /// The size of the pixels in the lines being drawn.
-  int pixelSize = 4;
+  int pixelSize = 1;
   /// The color being drawn with.
   float color[4] { 0, 0, 0, 1 };
   /// The current line being drawn.
