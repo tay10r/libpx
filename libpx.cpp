@@ -254,27 +254,46 @@ namespace {
 constexpr Color white() noexcept { return Color { 1, 1, 1, 1 }; }
 constexpr Color black() noexcept { return Color { 0, 0, 0, 1 }; }
 
+/// Used for visiting nodes in the scene graph.
 class NodeAccessor
 {
 public:
+  /// Just a stub.
   virtual ~NodeAccessor() {}
   virtual void access(const Line& line) noexcept = 0;
   virtual void access(const Fill& fill) noexcept = 0;
+  virtual void access(const Quad& quad) noexcept = 0;
 };
 
+/// This is the base of any
+/// class that appears in the scene graph.
 struct Node
 {
+  /// Just a stub.
   virtual ~Node() {}
-
+  /// Allows a node accessor class access
+  /// to the derived node type.
   virtual void accept(NodeAccessor& accessor) const noexcept = 0;
+};
+
+/// This is the base of any class that has
+/// a stroke. It contains the basic properties
+/// of how the stroke should be drawn.
+struct StrokeNode : public Node
+{
+  /// The size of the squares that
+  /// are drawn along the stroke.
+  std::size_t pixelSize = 1;
+  /// The color that the stroke is drawn with.
+  Color color = black();
 };
 
 } // namespace
 
-struct Line final : public Node
+/// Represents a series of straight line segments.
+struct Line final : public StrokeNode
 {
-  Color color = black();
-  std::size_t pixelSize = 1;
+  /// The points making up the line.
   std::vector<Vec2> points;
 
   void accept(NodeAccessor& accessor) const noexcept override
@@ -283,26 +302,19 @@ struct Line final : public Node
   }
 };
 
-bool addPoint(Line* line, int x, int y) noexcept
+void addPoint(Line* line, int x, int y)
 {
-  try {
-    line->points.emplace_back(Vec2 { x, y });
-  } catch (...) {
-    return false;
-  }
-
-  return true;
+  line->points.emplace_back(Vec2 { x, y });
 }
 
 bool setPoint(Line* line, std::size_t index, int x, int y) noexcept
 {
   if (index >= line->points.size()) {
     return false;
+  } else {
+    line->points[index] = Vec2 { x, y };
+    return true;
   }
-
-  line->points[index] = Vec2 { x, y };
-
-  return true;
 }
 
 void setPixelSize(Line* line, int pixelSize) noexcept
@@ -315,9 +327,13 @@ void setLineColor(Line* line, float r, float g, float b, float a) noexcept
   line->color = Color { r, g, b, a };
 }
 
+/// Represents a flood fill operation.
 struct Fill final : public Node
 {
+  /// The color to fill the area with.
   Color color = black();
+  /// The position on the image to start the fill operation at.
+  /// All pixels connected to this point are filled.
   Vec2 origin = Vec2 { 0, 0 };
 
   void accept(NodeAccessor& accessor) const noexcept override
@@ -336,6 +352,21 @@ void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept
   fill->color = Color { r, g, b, a };
 }
 
+/// Represents a quadrilateral shape.
+/// A quadrilateral shape differs from
+/// a rectangle in that the lines do not
+/// have to be axis-aligned.
+struct Quad final : public StrokeNode
+{
+  /// The points making up the quadrilateral.
+  Vec2 points[4];
+
+  void accept(NodeAccessor& accessor) const noexcept override
+  {
+    accessor.access(*this);
+  }
+};
+
 //================//
 // Section: Image //
 //================//
@@ -352,24 +383,13 @@ struct Image final
   std::size_t height = 0;
 };
 
-Image* createImage(std::size_t width, std::size_t height) noexcept
+Image* createImage(std::size_t width, std::size_t height)
 {
-  Image* image = nullptr;
+  auto image = std::make_unique<Image>(Image());
 
-  try {
-    image = new Image();
-  } catch (...) {
-    return nullptr;
-  }
+  resizeImage(image.get(), width, height);
 
-  try {
-    resizeImage(image, width, height);
-  } catch (...) {
-    delete image;
-    return nullptr;
-  }
-
-  return image;
+  return image.release();
 }
 
 void closeImage(Image* image) noexcept
@@ -386,18 +406,11 @@ std::size_t getImageWidth(const Image* image) noexcept { return image->width; }
 
 std::size_t getImageHeight(const Image* image) noexcept { return image->height; }
 
-bool resizeImage(Image* image, std::size_t w, std::size_t h) noexcept
+void resizeImage(Image* image, std::size_t w, std::size_t h)
 {
-  try {
-    image->colorBuffer.resize(w * h * 4);
-  } catch (...) {
-    return false;
-  }
-
+  image->colorBuffer.resize(w * h * 4);
   image->width = w;
   image->height = h;
-
-  return true;
 }
 
 //===================//
@@ -417,13 +430,9 @@ struct Document final
   Color background = white();
 };
 
-Document* createDoc() noexcept
+Document* createDoc()
 {
-  try {
-    return new Document();
-  } catch (...) {
-    return nullptr;
-  }
+  return new Document();
 }
 
 void closeDoc(Document* doc) noexcept
@@ -431,44 +440,25 @@ void closeDoc(Document* doc) noexcept
   delete doc;
 }
 
-Line* addLine(Document* doc) noexcept
+Line* addLine(Document* doc)
 {
-  Line* line = nullptr;
+  doc->nodes.emplace_back(new Line());
 
-  try {
-    line = new Line();
-  } catch (...) {
-    return nullptr;
-  }
-
-  try {
-    doc->nodes.emplace_back(line);
-  } catch (...) {
-    delete line;
-    return nullptr;
-  }
-
-  return line;
+  return dynamic_cast<Line*>(doc->nodes[doc->nodes.size() - 1].get());
 }
 
-Fill* addFill(Document* doc) noexcept
+Fill* addFill(Document* doc)
 {
-  Fill* fill = nullptr;
+  doc->nodes.emplace_back(new Fill());
 
-  try {
-    fill = new Fill();
-  } catch (...) {
-    return nullptr;
-  }
+  return dynamic_cast<Fill*>(doc->nodes[doc->nodes.size() - 1].get());
+}
 
-  try {
-    doc->nodes.emplace_back(fill);
-  } catch (...) {
-    delete fill;
-    return nullptr;
-  }
+Quad* addQuad(Document* doc)
+{
+  doc->nodes.emplace_back(new Quad());
 
-  return fill;
+  return dynamic_cast<Quad*>(doc->nodes[doc->nodes.size() - 1].get());
 }
 
 std::size_t getDocWidth(const Document* doc) noexcept { return doc->width; }
@@ -490,7 +480,7 @@ void setBackground(Document* doc, float r, float g, float b, float a) noexcept
 // Section: Painter //
 //==================//
 
-/// Contains the implementation data of the default painter interface.
+/// Used for rasterizing the document.
 class Painter final : public NodeAccessor
 {
   /// The current pixel size.
@@ -532,6 +522,18 @@ public:
     try {
       this->fill(fill.origin, prev, fill.color);
     } catch (...) { }
+  }
+  /// Draws a quadrilateral.
+  void access(const Quad& quad) noexcept override
+  {
+    primaryColor = quad.color;
+
+    pixelSize = quad.pixelSize;
+
+    drawLine(quad.points[0], quad.points[1]);
+    drawLine(quad.points[1], quad.points[2]);
+    drawLine(quad.points[2], quad.points[3]);
+    drawLine(quad.points[3], quad.points[0]);
   }
   /// Clears the contents of the color buffer.
   void clear(const Color& c) noexcept

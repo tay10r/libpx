@@ -1,30 +1,96 @@
+/// @file libpx.hpp
+///
+/// @brief Contains all of the public API declarations
+/// that are available to users.
+
+/// @mainpage libpx Documentation
+///
+/// @section pxGettingStarted Getting Started
+///
+/// To get started using this library, the first
+/// set of functions to use are one of:
+///
+/// - @ref px::createDoc
+/// - @ref px::createImage
+///
+/// Checkout @ref pxDocument and @ref pxImage for more
+/// information on using those objects.
+///
+/// Here's a code example that demonstrates the initialization and cleanup routines.
+/// @code{.cpp}
+///
+/// #include <libpx.hpp>
+///
+/// int main() {
+///   /* The document gets rendered to this object. */
+///   px::Image* img = px::createImage();
+///   /* Used to describe what to render (geometry, color, etc.) */
+///   px::Document* doc = px::createDoc();
+///
+///   /* Use library */
+///
+///   /* Finish using library and release memory */
+///   px::closeDoc(doc);
+///   px::closeImage(img);
+///   return 0;
+/// }
+/// @endcode
+///
+/// @section pxAddingContent Adding Content
+///
+/// Once an instance of @ref px::Document has been created,
+/// content can be added to it so that we have something to render.
+///
+/// @section pxRenderingContent Rendering Content
+///
+/// After content has been added to our document,
+/// we can render it onto an instance of @ref px::Image.
+///
+/// This can be done using one of the @ref px::render functions.
+
 #ifndef LIBPX_LIBPX_HPP
 #define LIBPX_LIBPX_HPP
 
 #include <cstddef>
 
+/// @brief All declarations for this
+/// library are put into this namespace.
 namespace px {
 
 struct Document;
 struct Fill;
 struct Image;
 struct Line;
+struct Quad;
+
+/// @defgroup pxDocument Document API
+///
+/// @brief Contains all declarations related to the document object.
+
+/// @defgroup pxImage Image API
+///
+/// @brief Contains all declarations related to the image API.
 
 /// Creates a new image instance.
+///
+/// @exception std::bad_alloc If the image allocation fails
+/// or if the color buffer allocation fails.
 ///
 /// @param width The width to give the image, in pixels.
 /// @param height The height to give the image, in pixels.
 ///
 /// @return A pointer to a new image instance.
-/// If a memory allocation fails, then a null
-/// pointer is returned.
-Image* createImage(std::size_t width, std::size_t height) noexcept;
+///
+/// @ingroup pxImage
+Image* createImage(std::size_t width, std::size_t height);
 
 /// Releases memory allocated by an image.
 ///
 /// @param image A pointer to the image
 /// returned by @ref createImage. This
 /// parameter may be a null pointer.
+///
+/// @ingroup pxImage
 void closeImage(Image* image) noexcept;
 
 /// Accesses the color buffer of an image.
@@ -32,7 +98,10 @@ void closeImage(Image* image) noexcept;
 /// @param image The image to get the color buffer of.
 ///
 /// @return A pointer to the image color buffer.
-/// The colors are in the format RGBA.
+/// The colors are in the format RGBA. The RGB
+/// components are premultiplied.
+///
+/// @ingroup pxImage
 const float* getColorBuffer(const Image* image) noexcept;
 
 /// Accesses the width of an image.
@@ -40,6 +109,8 @@ const float* getColorBuffer(const Image* image) noexcept;
 /// @param image The image to get the width of.
 ///
 /// @return The width of the image, in pixels.
+///
+/// @ingroup pxImage
 std::size_t getImageWidth(const Image* image) noexcept;
 
 /// Accesses the height of an image.
@@ -47,50 +118,69 @@ std::size_t getImageWidth(const Image* image) noexcept;
 /// @param image The image to get the height of.
 ///
 /// @return The height of the image, in pixels.
+///
+/// @ingroup pxImage
 std::size_t getImageHeight(const Image* image) noexcept;
 
 /// Resizes an image.
+///
+/// @exception std::bad_alloc If the color buffer resize fails.
 ///
 /// @param image A pointer to an image returned by @ref createImage.
 /// @param width The new width to assign the image.
 /// @param height The new height to assign the image.
 ///
-/// @return True on success, false on failure.
-/// This function may fail if a memory allocation fails.
-bool resizeImage(Image* image, std::size_t width, std::size_t height) noexcept;
+/// @ingroup pxImage
+void resizeImage(Image* image, std::size_t width, std::size_t height);
 
 /// Creates a new document instance.
 ///
 /// @return A new document instance.
-/// If a memory allocation fails, then
-/// a null pointer is returned.
-Document* createDoc() noexcept;
+///
+/// @ingroup pxDocument
+Document* createDoc();
 
 /// Releases memory allocated by a document.
 ///
 /// @param doc The document to release the memory of.
+///
+/// @ingroup pxDocument
 void closeDoc(Document* doc) noexcept;
 
 /// Adds a line to a document.
 ///
 /// @return A pointer to a new line instance.
 /// The line is owned by the document and does
-/// not need to be manually destroyed. If a memory
-/// allocation fails, then a null pointer is returned.
-Line* addLine(Document* doc) noexcept;
+/// not need to be manually destroyed.
+///
+/// @ingroup pxDocument
+Line* addLine(Document* doc);
 
 /// Adds a fill operation to the document.
 ///
 /// @param doc The document to add the fill operation to.
 ///
 /// @return A pointer to a new fill operation.
-Fill* addFill(Document* doc) noexcept;
+///
+/// @ingroup pxDocument
+Fill* addFill(Document* doc);
+
+/// Adds a quadrilateral to the document.
+///
+/// @param doc The document to add the quadrilateral to.
+///
+/// @return A pointer to the new quad structure.
+///
+/// @ingroup pxDocument
+Quad* addQuad(Document* doc);
 
 /// Gets the width of the document, in pixels.
 ///
 /// @param doc The document to get the width of.
 ///
 /// @return The width of the document.
+///
+/// @ingroup pxDocument
 std::size_t getDocWidth(const Document* doc) noexcept;
 
 /// Gets the height of the document, in pixels.
@@ -98,6 +188,8 @@ std::size_t getDocWidth(const Document* doc) noexcept;
 /// @param doc The document to get the height of.
 ///
 /// @return The height of the document.
+///
+/// @ingroup pxDocument
 std::size_t getDocHeight(const Document* doc) noexcept;
 
 /// Resizes the document.
@@ -108,14 +200,14 @@ std::size_t getDocHeight(const Document* doc) noexcept;
 /// @param doc The document to change the size of.
 /// @param width The width to assign the document, in terms of pixels.
 /// @param height The height to assign the document, in terms of pixels.
+///
+/// @ingroup pxDocument
 void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept;
 
 /// Sets the background color of a document.
-void setBackground(Document* doc,
-                   float r,
-                   float g,
-                   float b,
-                   float a) noexcept;
+///
+/// @ingroup pxDocument
+void setBackground(Document* doc, float r, float g, float b, float a) noexcept;
 
 /// Sets the origin of a fill operation.
 ///
@@ -138,10 +230,7 @@ void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept;
 /// @param line The line to add the point to.
 /// @param x The X coordinate of the point to add.
 /// @param y The Y coordinate of the point to add.
-///
-/// @return True on success, false on failure.
-/// This function may fail if a memory allocation fails.
-bool addPoint(Line* line, int x, int y) noexcept;
+void addPoint(Line* line, int x, int y);
 
 /// Sets the position of an existing point in the line.
 ///
