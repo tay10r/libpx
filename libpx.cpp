@@ -294,6 +294,17 @@ bool addPoint(Line* line, int x, int y) noexcept
   return true;
 }
 
+bool setPoint(Line* line, std::size_t index, int x, int y) noexcept
+{
+  if (index >= line->points.size()) {
+    return false;
+  }
+
+  line->points[index] = Vec2 { x, y };
+
+  return true;
+}
+
 void setPixelSize(Line* line, int pixelSize) noexcept
 {
   line->pixelSize = pixelSize;

@@ -20,6 +20,8 @@ class StrokeTool final : public Tool
   float color[4] { 0, 0, 0, 1 };
   /// The current line being drawn.
   Line* line = nullptr;
+  /// The last recorded cursor position.
+  unsigned pos[2] { 0, 0 };
 public:
   /// Constructs a new instance of the stroke tool.
   ///
@@ -28,15 +30,36 @@ public:
   /// Handles mouse movement.
   void mouseMotion(unsigned x, unsigned y) override
   {
-    (void)x;
-    (void)y;
+    pos[0] = x;
+    pos[1] = y;
+
+    if (!line) {
+      return;
+    }
+
+    setPoint(line, 1, x, y);
   }
-  void leftClick(bool) override
+  /// Creates a new line if the state is true.
+  /// Finishes the current line if the state is false.
+  void leftClick(bool state) override
   {
+    if (!state) {
+      line = nullptr;
+      return;
+    }
+
+    line = addLine(getDocument());
+
+    setPixelSize(line, pixelSize);
+
+    setLineColor(line, color[0], color[1], color[2], color[3]);
+
+    addPoint(line, pos[0], pos[1]);
+    addPoint(line, pos[0], pos[1]);
   }
-  void rightClick(bool)override
-  {
-  }
+  /// Just a stub.
+  void rightClick(bool)override { }
+  /// Renders the tool properties.
   void renderProperties() override
   {
     ImGui::SliderInt("Pixel Size", &pixelSize, 1, 8, "%d");

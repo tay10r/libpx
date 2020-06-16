@@ -143,6 +143,17 @@ void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept;
 /// This function may fail if a memory allocation fails.
 bool addPoint(Line* line, int x, int y) noexcept;
 
+/// Sets the position of an existing point in the line.
+///
+/// @param line The line to modify the point of.
+/// @param index The index of the point to modify.
+/// @param x The X coordinate to assign the point.
+/// @param y The Y coordinate to assign the point.
+///
+/// @return True on success, false on failure.
+/// This function returns false of @p index is out of bounds.
+bool setPoint(Line* line, std::size_t index, int x, int y) noexcept;
+
 /// Sets the color of a line.
 ///
 /// @param line The line to set the color of.
