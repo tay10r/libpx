@@ -46,10 +46,10 @@ public:
 
       setFillOrigin(fill, posX, posY);
 
-      setFillColor(fill, color[0] * 255,
-                         color[1] * 255,
-                         color[2] * 255,
-                         color[3] * 255);
+      setFillColor(fill, color[0],
+                         color[1],
+                         color[2],
+                         color[3]);
     }
   }
   /// Just a stub.

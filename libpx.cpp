@@ -7,15 +7,9 @@ namespace px {
 
 namespace {
 
-//===============//
-// Section: Vec2 //
-//===============//
-
-struct Vec2 final
-{
-  Scalar x = 0;
-  Scalar y = 0;
-};
+//======================//
+// Section: Scalar Math //
+//======================//
 
 /// Calculates the absolute value of a number.
 ///
@@ -30,65 +24,208 @@ inline constexpr T absolute(T in) noexcept
   return in < 0 ? -in : in;
 }
 
-/// Adds a scalar value to a vector.
-inline Vec2 operator + (const Vec2& a, Scalar b) noexcept
-{
-  return Vec2 { a.x + b, a.y + b };
-}
+//======================//
+// Section: Vector Math //
+//======================//
 
-/// Subtracts a scalar value to a vector.
-inline Vec2 operator - (const Vec2& a, Scalar b) noexcept
+/// A generic vector class. This
+/// is used for spatial information
+/// such as position and direction as
+/// well as RGBA values.
+///
+/// @tparam T The type for each component.
+/// This may be an integer for spatial data
+/// and a floating point type for color data.
+///
+/// @tparam dims The number of dimensions in
+/// the vector. Generally this is 2 for spatial
+/// data and 4 for color data.
+template <typename T, std::size_t dims>
+struct Vector final
 {
-  return Vec2 { a.x - b, a.y - b };
-}
+  /// One component per dimension.
+  /// The first component is X and
+  /// the second is Y. This may also
+  /// be used for color values, in which
+  /// case the first component is red, the
+  /// second is green, the third is blue, and
+  /// the last is alpha.
+  T data[dims] {};
+  /// Accesses a component in the vector.
+  constexpr inline T& operator [] (std::size_t index) noexcept {
+    return data[index];
+  }
+  /// Accesses a component in the vector.
+  constexpr inline const T& operator [] (std::size_t index) const noexcept {
+    return data[index];
+  }
+  /// Adds two vectors.
+  inline constexpr Vector operator + (const Vector& other) const noexcept
+  {
+    Vector out;
 
-/// Adds two vectors.
-inline Vec2 operator + (const Vec2& a, const Vec2& b) noexcept
-{
-  return Vec2 { b.x + a.x, b.y + a.y };
-}
+    for (std::size_t i = 0; i < dims; i++) {
+      out.data[i] = data[i] + other.data[i];
+    }
 
-/// Subtracts two vectors.
-inline Vec2 operator - (const Vec2& a, const Vec2& b) noexcept
-{
-  return Vec2 { b.x - a.x, b.y - a.y };
-}
+    return out;
+  }
+  /// Subtracts two vectors.
+  inline constexpr Vector operator - (const Vector& other) const noexcept
+  {
+    Vector out;
 
-/// Indicates if two 2D vectors are equal.
-inline bool operator == (const Vec2& a, const Vec2& b) noexcept
-{
-  return (a.x == b.x) && (a.y == b.y);
-}
+    for (std::size_t i = 0; i < dims; i++) {
+      out.data[i] = data[i] - other.data[i];
+    }
+
+    return out;
+  }
+  /// Adds a scalar value to the vector.
+  inline constexpr Vector operator + (T n) const noexcept
+  {
+    Vector out;
+
+    for (std::size_t i = 0; i < dims; i++) {
+      out.data[i] = data[i] + n;
+    }
+
+    return out;
+  }
+  /// Subtracts a scalar value from the vector.
+  inline constexpr Vector operator - (T n) const noexcept
+  {
+    Vector out;
+
+    for (std::size_t i = 0; i < dims; i++) {
+      out.data[i] = data[i] - n;
+    }
+
+    return out;
+  }
+  /// Divides the vector by a scalar value.
+  inline constexpr Vector operator / (T n) const noexcept
+  {
+    Vector out;
+
+    for (std::size_t i = 0; i < dims; i++) {
+      out.data[i] = data[i] / n;
+    }
+
+    return out;
+  }
+  /// Multiplies the vector by a scalar value.
+  inline constexpr Vector operator * (T n) const noexcept
+  {
+    Vector out;
+
+    for (std::size_t i = 0; i < dims; i++) {
+      out.data[i] = data[i] * n;
+    }
+
+    return out;
+  }
+};
 
 /// Calculates a vector with all absolute value components.
 ///
 /// @param v The vector to get the absolute values of.
 ///
 /// @return The resultant vector.
-inline Vec2 absolute(const Vec2& v) noexcept
+template <typename T, std::size_t dims>
+inline constexpr Vector<T, dims> absolute(const Vector<T, dims>& v) noexcept
 {
-  return Vec2 {
-    absolute(v.x),
-    absolute(v.y)
+  Vector<T, dims> out;
+
+  for (std::size_t i = 0; i < dims; i++) {
+    out.data[i] = absolute(v[i]);
+  }
+
+  return out;
+}
+
+/// Calculates a vector whose components
+/// are the minimum values between two other vectors.
+template <typename T, std::size_t dims>
+inline constexpr Vector<T, dims> min(const Vector<T, dims>& a, const Vector<T, dims>& b) noexcept
+{
+  Vector<T, dims> out;
+
+  for (std::size_t i = 0; i < dims; i++) {
+    out.data[i] = std::min(a.data[i], b.data[i]);
+  }
+
+  return out;
+}
+
+/// Calculates a vector whose components
+/// are the maximum values between two other vectors.
+template <typename T, std::size_t dims>
+inline constexpr Vector<T, dims> max(const Vector<T, dims>& a, const Vector<T, dims>& b) noexcept
+{
+  Vector<T, dims> out;
+
+  for (std::size_t i = 0; i < dims; i++) {
+    out.data[i] = std::max(a.data[i], b.data[i]);
+  }
+
+  return out;
+}
+
+/// A color type definition.
+using Color = Vector<float, 4>;
+
+/// A 2D vector type definition.
+/// Since this is usually used for
+/// spatial information, it is an
+/// integer vector.
+using Vec2 = Vector<int, 2>;
+
+/// This is the change in value of a
+/// color channel that is seen from the
+/// final result of an 8-bit per channel image.
+/// This value is primarily used to see if
+/// two colors are mostly equal.
+constexpr float colorDelta() noexcept { return 1.0f / 256.0f; }
+
+/// Indicates if two colors are almost equal.
+///
+/// @param a The first color operand.
+/// @param b The second color operand.
+/// @param bias The maximum allowable difference.
+/// This defaults to (1 / 256), which is the
+/// user perceivable difference.
+///
+/// @return True if they're almost equal, false otherwise.
+constexpr bool almostEqual(const Color& a, const Color& b, float bias = colorDelta()) noexcept
+{
+  auto diff = absolute(a - b);
+
+  return (diff[0] < bias)
+      && (diff[1] < bias)
+      && (diff[2] < bias)
+      && (diff[3] < bias);
+}
+
+/// Clips a color to be between a minimum and maximum value.
+///
+/// @param in The color to clip.
+/// @param min The minimum value to clip to.
+/// @param max The maximum value to clip to.
+constexpr Color clip(const Color& in, float min = 0, float max = 1) noexcept
+{
+  return Color {
+    std::min(std::max(min, in[0]), max),
+    std::min(std::max(min, in[1]), max),
+    std::min(std::max(min, in[2]), max),
+    std::min(std::max(min, in[3]), max)
   };
 }
 
-/// Calculates the minimum components of two 2D vectors.
-inline Vec2 min(const Vec2& a, const Vec2& b) noexcept
+/// Indicates if two 2D vectors are equal.
+inline bool operator == (const Vec2& a, const Vec2& b) noexcept
 {
-  return Vec2 {
-    std::min(a.x, b.x),
-    std::min(a.y, b.y)
-  };
-}
-
-/// Calculates the maximum components of two 2D vectors.
-inline Vec2 max(const Vec2& a, const Vec2& b) noexcept
-{
-  return Vec2 {
-    std::max(a.x, b.x),
-    std::max(a.y, b.y)
-  };
+  return (a[0] == b[0]) && (a[1] == b[1]);
 }
 
 /// Clips a vector between a minimum and a maximum range.
@@ -101,8 +238,8 @@ inline Vec2 max(const Vec2& a, const Vec2& b) noexcept
 inline Vec2 clip(const Vec2& in, const Vec2& min, const Vec2& max) noexcept
 {
   return Vec2 {
-    std::min(std::max(in.x, min.x), max.x),
-    std::min(std::max(in.y, min.y), max.y)
+    std::min(std::max(in[0], min[0]), max[0]),
+    std::min(std::max(in[1], min[1]), max[1])
   };
 }
 
@@ -114,31 +251,8 @@ inline Vec2 clip(const Vec2& in, const Vec2& min, const Vec2& max) noexcept
 
 namespace {
 
-struct Color final
-{
-  Byte r = 0;
-  Byte g = 0;
-  Byte b = 0;
-  Byte a = 255;
-
-  inline bool operator != (const Color& other) noexcept
-  {
-    return (r != other.r)
-        || (g != other.g)
-        || (b != other.b)
-        || (a != other.a);
-  }
-  inline bool operator == (const Color& other) noexcept
-  {
-    return (r == other.r)
-        && (g == other.g)
-        && (b == other.b)
-        && (a == other.a);
-  }
-};
-
-constexpr Color white() noexcept { return Color { 255, 255, 255, 255 }; }
-constexpr Color black() noexcept { return Color {   0,   0,   0, 255 }; }
+constexpr Color white() noexcept { return Color { 1, 1, 1, 1 }; }
+constexpr Color black() noexcept { return Color { 0, 0, 0, 1 }; }
 
 class NodeAccessor
 {
@@ -160,7 +274,7 @@ struct Node
 struct Line final : public Node
 {
   Color color = black();
-  Size pixelSize = 1;
+  std::size_t pixelSize = 1;
   std::vector<Vec2> points;
 
   void accept(NodeAccessor& accessor) const noexcept override
@@ -169,7 +283,7 @@ struct Line final : public Node
   }
 };
 
-bool addPoint(Line* line, Scalar x, Scalar y) noexcept
+bool addPoint(Line* line, int x, int y) noexcept
 {
   try {
     line->points.emplace_back(Vec2 { x, y });
@@ -180,12 +294,12 @@ bool addPoint(Line* line, Scalar x, Scalar y) noexcept
   return true;
 }
 
-void setPixelSize(Line* line, Scalar pixelSize) noexcept
+void setPixelSize(Line* line, int pixelSize) noexcept
 {
   line->pixelSize = pixelSize;
 }
 
-void setLineColor(Line* line, Byte r, Byte g, Byte b, Byte a) noexcept
+void setLineColor(Line* line, float r, float g, float b, float a) noexcept
 {
   line->color = Color { r, g, b, a };
 }
@@ -201,13 +315,12 @@ struct Fill final : public Node
   }
 };
 
-void setFillOrigin(Fill* fill, Scalar x, Scalar y) noexcept
+void setFillOrigin(Fill* fill, int x, int y) noexcept
 {
-  fill->origin.x = x;
-  fill->origin.y = y;
+  fill->origin = Vec2 { x, y };
 }
 
-void setFillColor(Fill* fill, Byte r, Byte g, Byte b, Byte a) noexcept
+void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept
 {
   fill->color = Color { r, g, b, a };
 }
@@ -221,14 +334,14 @@ struct Image final
 {
   /// The image colors, formatted
   /// in the order of RGBA.
-  std::vector<Byte> colorBuffer;
+  std::vector<float> colorBuffer;
   /// The width of the image, in pixels.
-  Size width = 0;
+  std::size_t width = 0;
   /// The height of the image, in pixels.
-  Size height = 0;
+  std::size_t height = 0;
 };
 
-Image* createImage(Size width, Size height) noexcept
+Image* createImage(std::size_t width, std::size_t height) noexcept
 {
   Image* image = nullptr;
 
@@ -253,16 +366,16 @@ void closeImage(Image* image) noexcept
   delete image;
 }
 
-const Byte* getColorBuffer(const Image* image) noexcept
+const float* getColorBuffer(const Image* image) noexcept
 {
   return image->colorBuffer.data();
 }
 
-Size getImageWidth(const Image* image) noexcept { return image->width; }
+std::size_t getImageWidth(const Image* image) noexcept { return image->width; }
 
-Size getImageHeight(const Image* image) noexcept { return image->height; }
+std::size_t getImageHeight(const Image* image) noexcept { return image->height; }
 
-bool resizeImage(Image* image, Size w, Size h) noexcept
+bool resizeImage(Image* image, std::size_t w, std::size_t h) noexcept
 {
   try {
     image->colorBuffer.resize(w * h * 4);
@@ -286,9 +399,9 @@ struct Document final
   /// The nodes added to the document.
   std::vector<std::unique_ptr<Node>> nodes;
   /// The width of the document, in pixels.
-  Size width = 64;
+  std::size_t width = 64;
   /// The height of the document, in pixels.
-  Size height = 64;
+  std::size_t height = 64;
   /// The default background color.
   Color background = white();
 };
@@ -347,17 +460,17 @@ Fill* addFill(Document* doc) noexcept
   return fill;
 }
 
-Size getDocWidth(const Document* doc) noexcept { return doc->width; }
+std::size_t getDocWidth(const Document* doc) noexcept { return doc->width; }
 
-Size getDocHeight(const Document* doc) noexcept { return doc->height; }
+std::size_t getDocHeight(const Document* doc) noexcept { return doc->height; }
 
-void resizeDoc(Document* doc, Size width, Size height) noexcept
+void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept
 {
   doc->width = width;
   doc->height = height;
 }
 
-void setBackground(Document* doc, Byte r, Byte g, Byte b, Byte a) noexcept
+void setBackground(Document* doc, float r, float g, float b, float a) noexcept
 {
   doc->background = Color { r, g, b, a };
 }
@@ -370,24 +483,24 @@ void setBackground(Document* doc, Byte r, Byte g, Byte b, Byte a) noexcept
 class Painter final : public NodeAccessor
 {
   /// The current pixel size.
-  Size pixelSize = 1;
+  std::size_t pixelSize = 1;
   /// The current material used to paint with.
   Color primaryColor = Color { 0, 0, 0, 0 };
   /// The color buffer being rendered to.
-  Byte* colorBuffer;
+  float* colorBuffer = nullptr;
   /// The width of the color buffer, in pixels.
-  Size width = 0;
+  std::size_t width = 0;
   /// The height of the color buffer, in pixels.
-  Size height = 0;
+  std::size_t height = 0;
 public:
-  Painter(Byte* c, Size w, Size h) : colorBuffer(c), width(w), height(h) {}
+  Painter(float* c, std::size_t w, std::size_t h) : colorBuffer(c), width(w), height(h) {}
   /// Renders a line.
   void access(const Line& line) noexcept override
   {
     primaryColor = line.color;
     pixelSize = line.pixelSize;
 
-    for (Size i = 1; i < line.points.size(); i++) {
+    for (std::size_t i = 1; i < line.points.size(); i++) {
       drawLine(line.points[i - 1], line.points[i - 0]);
     }
   }
@@ -401,7 +514,7 @@ public:
 
     auto prev = getPixel(fill.origin);
 
-    if (prev == fill.color) {
+    if (almostEqual(prev, fill.color)) {
       return;
     }
 
@@ -415,44 +528,43 @@ public:
     unsigned max = width * height * 4;
 
     for (unsigned i = 0; i < max; i += 4) {
-      colorBuffer[i + 0] = c.r;
-      colorBuffer[i + 1] = c.g;
-      colorBuffer[i + 2] = c.b;
-      colorBuffer[i + 3] = c.a;
+      colorBuffer[i + 0] = c[0];
+      colorBuffer[i + 1] = c[1];
+      colorBuffer[i + 2] = c[2];
+      colorBuffer[i + 3] = c[3];
     }
   }
   void drawLine(const Vec2& a, const Vec2& b) noexcept
   {
-    Vec2 diff {
-       absolute(a.x - b.x),
-      -absolute(a.y - b.y)
-    };
+    auto diff = absolute(a - b);
 
-    Scalar signX = (a.x < b.x) ? 1 : -1;
-    Scalar signY = (a.y < b.y) ? 1 : -1;
+    diff[1] = -diff[1];
 
-    Scalar err = diff.x + diff.y;
+    int signX = (a[0] < b[0]) ? 1 : -1;
+    int signY = (a[1] < b[1]) ? 1 : -1;
+
+    int err = diff[0] + diff[1];
 
     auto p = a;
 
     for (;;) {
 
-      plot(p.x, p.y);
+      plot(p[0], p[1]);
 
       if (p == b) {
         break;
       }
 
-      Scalar err2 = 2 * err;
+      int err2 = 2 * err;
 
-      if (err2 >= diff.y) {
-        err += diff.y;
-        p.x += signX;
+      if (err2 >= diff[1]) {
+        err += diff[1];
+        p[0] += signX;
       }
 
-      if (err2 <= diff.x) {
-        err += diff.x;
-        p.y += signY;
+      if (err2 <= diff[0]) {
+        err += diff[0];
+        p[1] += signY;
       }
     }
   }
@@ -460,7 +572,7 @@ public:
   ///
   /// @param x The X coordinate of the point to plot.
   /// @param y The Y coordinate of the point to plot.
-  inline void plot(Scalar x, Scalar y) { plot(Vec2 { x, y }); }
+  inline void plot(int x, int y) { plot(Vec2 { x, y }); }
   /// Plots a point onto the color buffer.
   ///
   /// @param p The point to plot within the color buffer.
@@ -470,13 +582,13 @@ public:
     Vec2 max { p + pixelSize };
 
     const Vec2 imageMin = Vec2 { 0, 0 };
-    const Vec2 imageMax = Vec2 { Scalar(width), Scalar(height) };
+    const Vec2 imageMax = Vec2 { int(width), int(height) };
 
     min = clip(min, imageMin, imageMax);
     max = clip(max, imageMin, imageMax);
 
-    for (Scalar y = min.y; y < max.y; y++) {
-      for (Scalar x = min.x; x < max.x; x++) {
+    for (int y = min[1]; y < max[1]; y++) {
+      for (int x = min[0]; x < max[0]; x++) {
         setPixel(x, y, primaryColor);
       }
     }
@@ -488,13 +600,13 @@ public:
   /// @param x The X coordinate of the pixel to set.
   /// @param y The Y coordinate of the pixel to set.
   /// @param c The color to assign the pixel.
-  inline void setPixel(Scalar x, Scalar y, const Color& c)
+  inline void setPixel(int x, int y, const Color& c)
   {
     auto* dst = &colorBuffer[((y * width) + x) * 4];
-    dst[0] = c.r;
-    dst[1] = c.g;
-    dst[2] = c.b;
-    dst[3] = c.a;
+    dst[0] = c[0];
+    dst[1] = c[1];
+    dst[2] = c[2];
+    dst[3] = c[3];
   }
   /// Sets the value of a pixel.
   ///
@@ -504,7 +616,7 @@ public:
   /// @param c The color to assign the pixel.
   inline void setPixel(const Vec2& p, const Color& c)
   {
-    return setPixel(p.x, p.y, c);
+    return setPixel(p[0], p[1], c);
   }
   /// Gets the color from a pixel at a certain point.
   ///
@@ -515,7 +627,7 @@ public:
   /// @return The color at the specified point.
   inline Color getPixel(const Vec2& p) const noexcept
   {
-    return getPixel(p.x, p.y);
+    return getPixel(p[0], p[1]);
   }
   /// Gets the color from a pixel at a certain point.
   ///
@@ -525,9 +637,9 @@ public:
   /// @param y The Y coordinate of the pixel to get.
   ///
   /// @return The color at the specified point.
-  inline Color getPixel(Scalar x, Scalar y) const noexcept
+  inline Color getPixel(int x, int y) const noexcept
   {
-    const Byte* src = &colorBuffer[((y * width) + x) * 4];
+    const float* src = &colorBuffer[((y * width) + x) * 4];
 
     return Color { src[0], src[1], src[2], src[3] };
   }
@@ -538,8 +650,8 @@ public:
   /// @return True on success, false on failure.
   inline bool inBounds(const Vec2& p) const noexcept
   {
-    return ((p.x >= 0) && (Size(p.x) < width))
-        && ((p.y >= 0) && (Size(p.y) < height));
+    return ((p[0] >= 0) && (std::size_t(p[0]) < width))
+        && ((p[1] >= 0) && (std::size_t(p[1]) < height));
   }
 protected:
   /// Fills an area on the image with a color.
@@ -554,26 +666,26 @@ protected:
       return;
     }
 
-    Scalar xMax = Scalar(width);
-    Scalar yMax = Scalar(height);
+    int xMax = int(width);
+    int yMax = int(height);
 
     std::vector<Vec2> stack;
 
     stack.push_back(origin);
 
     auto pop = [](std::vector<Vec2>& stk) {
-      auto last = stk[stk.size() - 1];
+      auto poppedItem = stk[stk.size() - 1];
       stk.pop_back();
-      return last;
+      return poppedItem;
     };
 
     while (!stack.empty()) {
 
       auto p = pop(stack);
 
-      auto x1 = p.x;
+      auto x1 = p[0];
 
-      while ((x1 >= 0) && (getPixel(x1, p.y) == prev)) {
+      while ((x1 >= 0) && almostEqual(getPixel(x1, p[1]), prev)) {
         x1--;
       }
 
@@ -582,21 +694,21 @@ protected:
       auto spanAbove = false;
       auto spanBelow = false;
 
-      while ((x1 >= 0) && (x1 < xMax) && (getPixel(x1, p.y) == prev)) {
+      while ((x1 >= 0) && (x1 < xMax) && almostEqual(getPixel(x1, p[1]), prev)) {
 
-        setPixel(x1, p.y, next);
+        setPixel(x1, p[1], next);
 
-        if (!spanAbove && (p.y > 0) && (getPixel(x1, p.y - 1) == prev)) {
-          stack.push_back(Vec2 { x1, p.y - 1 });
+        if (!spanAbove && (p[1] > 0) && almostEqual(getPixel(x1, p[1] - 1), prev)) {
+          stack.push_back(Vec2 { x1, p[1] - 1 });
           spanAbove = true;
-        } else if (spanAbove && (p.y > 0) && (getPixel(x1, p.y - 1) != prev)) {
+        } else if (spanAbove && (p[1] > 0) && !almostEqual(getPixel(x1, p[1] - 1), prev)) {
           spanAbove = false;
         }
 
-        if (!spanBelow && (p.y < (yMax - 1)) && (getPixel(x1, p.y + 1) == prev)) {
-          stack.push_back(Vec2 { x1, p.y + 1 });
+        if (!spanBelow && (p[1] < (yMax - 1)) && almostEqual(getPixel(x1, p[1] + 1), prev)) {
+          stack.push_back(Vec2 { x1, p[1] + 1 });
           spanBelow = true;
-        } else if (spanBelow && (p.y < (yMax - 1)) && (getPixel(x1, p.y + 1) != prev)) {
+        } else if (spanBelow && (p[1] < (yMax - 1)) && !almostEqual(getPixel(x1, p[1] + 1), prev)) {
           spanBelow = false;
         }
 
@@ -606,7 +718,7 @@ protected:
   }
 };
 
-void render(const Document* doc, Byte* colorBuffer, Size w, Size h) noexcept
+void render(const Document* doc, float* colorBuffer, std::size_t w, std::size_t h) noexcept
 {
   Painter painter(colorBuffer, w, h);
 

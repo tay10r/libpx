@@ -1,7 +1,7 @@
 #ifndef LIBPX_LIBPX_HPP
 #define LIBPX_LIBPX_HPP
 
-#include <memory>
+#include <cstddef>
 
 namespace px {
 
@@ -9,18 +9,6 @@ struct Document;
 struct Fill;
 struct Image;
 struct Line;
-
-/// A type definition for a single byte.
-using Byte = unsigned char;
-
-/// A type definition for a scalar value
-/// in image space. This is used for points,
-/// colors, similar items.
-using Scalar = int;
-
-/// A type definition for a size value.
-/// This is used for indices and array sizes.
-using Size = unsigned long;
 
 /// Creates a new image instance.
 ///
@@ -30,7 +18,7 @@ using Size = unsigned long;
 /// @return A pointer to a new image instance.
 /// If a memory allocation fails, then a null
 /// pointer is returned.
-Image* createImage(Size width, Size height) noexcept;
+Image* createImage(std::size_t width, std::size_t height) noexcept;
 
 /// Releases memory allocated by an image.
 ///
@@ -45,21 +33,21 @@ void closeImage(Image* image) noexcept;
 ///
 /// @return A pointer to the image color buffer.
 /// The colors are in the format RGBA.
-const Byte* getColorBuffer(const Image* image) noexcept;
+const float* getColorBuffer(const Image* image) noexcept;
 
 /// Accesses the width of an image.
 ///
 /// @param image The image to get the width of.
 ///
 /// @return The width of the image, in pixels.
-Size getImageWidth(const Image* image) noexcept;
+std::size_t getImageWidth(const Image* image) noexcept;
 
 /// Accesses the height of an image.
 ///
 /// @param image The image to get the height of.
 ///
 /// @return The height of the image, in pixels.
-Size getImageHeight(const Image* image) noexcept;
+std::size_t getImageHeight(const Image* image) noexcept;
 
 /// Resizes an image.
 ///
@@ -69,7 +57,7 @@ Size getImageHeight(const Image* image) noexcept;
 ///
 /// @return True on success, false on failure.
 /// This function may fail if a memory allocation fails.
-bool resizeImage(Image* image, Size width, Size height) noexcept;
+bool resizeImage(Image* image, std::size_t width, std::size_t height) noexcept;
 
 /// Creates a new document instance.
 ///
@@ -103,14 +91,14 @@ Fill* addFill(Document* doc) noexcept;
 /// @param doc The document to get the width of.
 ///
 /// @return The width of the document.
-Size getDocWidth(const Document* doc) noexcept;
+std::size_t getDocWidth(const Document* doc) noexcept;
 
 /// Gets the height of the document, in pixels.
 ///
 /// @param doc The document to get the height of.
 ///
 /// @return The height of the document.
-Size getDocHeight(const Document* doc) noexcept;
+std::size_t getDocHeight(const Document* doc) noexcept;
 
 /// Resizes the document.
 /// Internally, all this does is change the
@@ -120,30 +108,30 @@ Size getDocHeight(const Document* doc) noexcept;
 /// @param doc The document to change the size of.
 /// @param width The width to assign the document, in terms of pixels.
 /// @param height The height to assign the document, in terms of pixels.
-void resizeDoc(Document* doc, Size width, Size height) noexcept;
+void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept;
 
 /// Sets the background color of a document.
 void setBackground(Document* doc,
-                   Byte r,
-                   Byte g,
-                   Byte b,
-                   Byte a) noexcept;
+                   float r,
+                   float g,
+                   float b,
+                   float a) noexcept;
 
 /// Sets the origin of a fill operation.
 ///
 /// @param fill The fill operation to set the origin of.
 /// @param x The X position of the origin.
 /// @param y The Y position of the origin.
-void setFillOrigin(Fill* fill, Scalar x, Scalar y) noexcept;
+void setFillOrigin(Fill* fill, int x, int y) noexcept;
 
 /// Sets the color of the fill operation.
 ///
 /// @param fill The fill operation to set the color of.
-/// @param r The red channel value of the fill operation (0 to 255)
-/// @param g The green channel value of the fill operation (0 to 255)
-/// @param b The blue channel value of the fill operation (0 to 255)
-/// @param a The alpha channel value of the fill operation (0 to 255)
-void setFillColor(Fill* fill, Byte r, Byte g, Byte b, Byte a) noexcept;
+/// @param r The red channel value of the fill operation (0 to 1)
+/// @param g The green channel value of the fill operation (0 to 1)
+/// @param b The blue channel value of the fill operation (0 to 1)
+/// @param a The alpha channel value of the fill operation (0 to 1)
+void setFillColor(Fill* fill, float r, float g, float b, float a) noexcept;
 
 /// Adds a point to a line.
 ///
@@ -153,13 +141,13 @@ void setFillColor(Fill* fill, Byte r, Byte g, Byte b, Byte a) noexcept;
 ///
 /// @return True on success, false on failure.
 /// This function may fail if a memory allocation fails.
-bool addPoint(Line* line, Scalar x, Scalar y) noexcept;
+bool addPoint(Line* line, int x, int y) noexcept;
 
 /// Sets the color of a line.
 ///
 /// @param line The line to set the color of.
 /// A new line can be created by calling @ref addLine
-void setLineColor(Line* line, Byte r, Byte g, Byte b, Byte a) noexcept;
+void setLineColor(Line* line, float r, float g, float b, float a) noexcept;
 
 /// Sets the pixel size of a line.
 ///
@@ -169,20 +157,26 @@ void setLineColor(Line* line, Byte r, Byte g, Byte b, Byte a) noexcept;
 /// @param pixelSize The pixel size to assign. This
 /// acts as both the width and height of the pixel,
 /// since all pixels are squares.
-void setPixelSize(Line* line, Scalar pixelSize) noexcept;
+void setPixelSize(Line* line, int pixelSize) noexcept;
 
 /// Renders the document onto a color buffer.
 ///
 /// @param doc The document to be rendered.
+///
 /// @param color The color buffer to render to.
+/// There must be 4 floats per color, since the
+/// color format is RGBA.
+///
 /// @param w The width of the color buffer.
 /// @param h The height of the color buffer.
-void render(const Document* doc, Byte* color, Size w, Size h) noexcept;
+void render(const Document* doc, float* color, std::size_t w, std::size_t h) noexcept;
 
 /// Renders the document onto an instance of @ref Image.
 ///
 /// @param doc the document to be rendered.
+///
 /// @param image The image to render the document onto.
+/// This can be generated with @ref createImage
 void render(const Document* doc, Image* image) noexcept;
 
 } // namespace px

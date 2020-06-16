@@ -15,7 +15,7 @@ namespace {
 class PenTool final : public Tool
 {
   /// The size of the pixels in the lines being drawn.
-  Scalar pixelSize = 4;
+  int pixelSize = 4;
   /// The color being drawn with.
   float color[4] { 0, 0, 0, 1 };
   /// The current line being drawn.
@@ -44,10 +44,10 @@ public:
 
       setPixelSize(line, pixelSize);
 
-      setLineColor(line, color[0] * 255,
-                         color[1] * 255,
-                         color[2] * 255,
-                         color[3] * 255);
+      setLineColor(line, color[0],
+                         color[1],
+                         color[2],
+                         color[3]);
     } else {
       line = nullptr;
     }

@@ -476,7 +476,7 @@ void Editor::renderDocument()
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, impl->texture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, docWidth, docHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, getColorBuffer(impl->image));
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, docWidth, docHeight, 0, GL_RGBA, GL_FLOAT, getColorBuffer(impl->image));
   glGenerateMipmap(GL_TEXTURE_2D);
 
   glEnableVertexAttribArray(0);
