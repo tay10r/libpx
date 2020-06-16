@@ -245,9 +245,9 @@ inline Vec2 clip(const Vec2& in, const Vec2& min, const Vec2& max) noexcept
 
 } // namespace
 
-//======================//
-// Section: Scene Graph //
-//======================//
+//===================//
+// Section: Geometry //
+//===================//
 
 namespace {
 
@@ -260,8 +260,9 @@ class NodeAccessor
 public:
   /// Just a stub.
   virtual ~NodeAccessor() {}
-  virtual void access(const Line& line) noexcept = 0;
+  virtual void access(const Ellipse& ellipse) noexcept = 0;
   virtual void access(const Fill& fill) noexcept = 0;
+  virtual void access(const Line& line) noexcept = 0;
   virtual void access(const Quad& quad) noexcept = 0;
 };
 
@@ -289,6 +290,74 @@ struct StrokeNode : public Node
 };
 
 } // namespace
+
+struct Ellipse final : public StrokeNode
+{
+  Vec2 center = Vec2 { 0, 0 };
+  Vec2 radius = Vec2 { 0, 0 };
+
+  void accept(NodeAccessor& accessor) const noexcept override
+  {
+    accessor.access(*this);
+  }
+};
+
+void setCenter(Ellipse* ellipse, int x, int y) noexcept
+{
+  ellipse->center = Vec2 { x, y };
+}
+
+void setRadius(Ellipse* ellipse, int x, int y) noexcept
+{
+  ellipse->radius = Vec2 { x, y };
+}
+
+void setColor(Ellipse* ellipse, float r, float g, float b) noexcept
+{
+  ellipse->color = Color { r, g, b, 1 };
+}
+
+void setPixelSize(Ellipse* ellipse, int pixelSize) noexcept
+{
+  ellipse->pixelSize = absolute(pixelSize);
+}
+
+void resizeRect(Ellipse* ellipse, int x1, int y1, int x2, int y2) noexcept
+{
+  auto p1 = Vec2 { x1, y1 };
+  auto p2 = Vec2 { x2, y2 };
+
+  auto pMin = min(p1, p2);
+  auto pMax = max(p1, p2);
+
+  ellipse->center = (pMax + pMin) / 2;
+  ellipse->radius = (pMax - pMin) / 2;
+}
+
+/// Represents a flood fill operation.
+struct Fill final : public Node
+{
+  /// The color to fill the area with.
+  Color color = black();
+  /// The position on the image to start the fill operation at.
+  /// All pixels connected to this point are filled.
+  Vec2 origin = Vec2 { 0, 0 };
+
+  void accept(NodeAccessor& accessor) const noexcept override
+  {
+    accessor.access(*this);
+  }
+};
+
+void setFillOrigin(Fill* fill, int x, int y) noexcept
+{
+  fill->origin = Vec2 { x, y };
+}
+
+void setColor(Fill* fill, float r, float g, float b) noexcept
+{
+  fill->color = Color { r, g, b, 1 };
+}
 
 /// Represents a series of straight line segments.
 struct Line final : public StrokeNode
@@ -319,37 +388,12 @@ bool setPoint(Line* line, std::size_t index, int x, int y) noexcept
 
 void setPixelSize(Line* line, int pixelSize) noexcept
 {
-  line->pixelSize = pixelSize;
+  line->pixelSize = absolute(pixelSize);
 }
 
 void setColor(Line* line, float r, float g, float b) noexcept
 {
   line->color = Color { r, g, b, 1 };
-}
-
-/// Represents a flood fill operation.
-struct Fill final : public Node
-{
-  /// The color to fill the area with.
-  Color color = black();
-  /// The position on the image to start the fill operation at.
-  /// All pixels connected to this point are filled.
-  Vec2 origin = Vec2 { 0, 0 };
-
-  void accept(NodeAccessor& accessor) const noexcept override
-  {
-    accessor.access(*this);
-  }
-};
-
-void setFillOrigin(Fill* fill, int x, int y) noexcept
-{
-  fill->origin = Vec2 { x, y };
-}
-
-void setColor(Fill* fill, float r, float g, float b) noexcept
-{
-  fill->color = Color { r, g, b, 1 };
 }
 
 /// Represents a quadrilateral shape.
@@ -460,11 +504,11 @@ void closeDoc(Document* doc) noexcept
   delete doc;
 }
 
-Line* addLine(Document* doc)
+Ellipse* addEllipse(Document* doc)
 {
-  doc->nodes.emplace_back(new Line());
+  doc->nodes.emplace_back(new Ellipse());
 
-  return dynamic_cast<Line*>(doc->nodes[doc->nodes.size() - 1].get());
+  return dynamic_cast<Ellipse*>(doc->nodes[doc->nodes.size() - 1].get());
 }
 
 Fill* addFill(Document* doc)
@@ -472,6 +516,13 @@ Fill* addFill(Document* doc)
   doc->nodes.emplace_back(new Fill());
 
   return dynamic_cast<Fill*>(doc->nodes[doc->nodes.size() - 1].get());
+}
+
+Line* addLine(Document* doc)
+{
+  doc->nodes.emplace_back(new Line());
+
+  return dynamic_cast<Line*>(doc->nodes[doc->nodes.size() - 1].get());
 }
 
 Quad* addQuad(Document* doc)
@@ -496,6 +547,94 @@ void setBackground(Document* doc, float r, float g, float b, float a) noexcept
   doc->background = Color { r, g, b, a };
 }
 
+//============================//
+// Section: Render Algorithms //
+//============================//
+
+/// This function is based on the algorithm
+/// described by John Kennedy on rasterizing
+/// an ellipse.
+///
+/// @param cx The center X component.
+/// @param cy The center Y component.
+/// @param rx The X radius
+/// @param ry The Y radius
+/// @param functor Receives the points to plot on the ellipse.
+template <typename Functor>
+void renderEllipse(int cx, int cy, int xRadius, int yRadius, Functor functor) noexcept
+{
+  if (!xRadius || !yRadius) {
+    return;
+  }
+
+  auto plot4 = [cx, cy, functor](int x, int y) {
+    functor(cx + x, cy + y);
+    functor(cx - x, cy + y);
+    functor(cx - x, cy - y);
+    functor(cx + x, cy - y);
+  };
+
+  int twoASquare = 2 * xRadius * xRadius;
+  int twoBSquare = 2 * yRadius * yRadius;
+
+  int x = xRadius;
+  int y = 0;
+
+  int xChange = yRadius * yRadius * (1 - (2 * xRadius));
+  int yChange = xRadius * xRadius;
+
+  int ellipseError = 0;
+
+  int stoppingX = twoBSquare * xRadius;
+  int stoppingY = 0;
+
+  while (stoppingX >= stoppingY) {
+
+    plot4(x, y);
+
+    y++;
+    stoppingY += twoASquare;
+    ellipseError += yChange;
+    yChange += twoASquare;
+
+    if (((2 * ellipseError) + xChange) > 0) {
+      x--;
+      stoppingX -= twoBSquare;
+      ellipseError += xChange;
+      xChange += twoBSquare;
+    }
+  }
+
+  x = 0;
+  y = yRadius;
+
+  xChange = yRadius * yRadius;
+  yChange = xRadius * xRadius * (1 - (2 * yRadius));
+
+  ellipseError = 0;
+
+  stoppingX = 0;
+  stoppingY = twoASquare * yRadius;
+
+  while (stoppingX <= stoppingY) {
+
+    plot4(x, y);
+
+    x++;
+    stoppingX += twoBSquare;
+    ellipseError += xChange;
+    xChange += twoBSquare;
+    if (((2 * ellipseError) + yChange) > 0) {
+      y--;
+      stoppingY -= twoASquare;
+      ellipseError += yChange;
+      yChange += twoASquare;
+    }
+  }
+
+  // 1st point set done
+}
+
 //==================//
 // Section: Painter //
 //==================//
@@ -515,15 +654,22 @@ class Painter final : public NodeAccessor
   std::size_t height = 0;
 public:
   Painter(float* c, std::size_t w, std::size_t h) : colorBuffer(c), width(w), height(h) {}
-  /// Renders a line.
-  void access(const Line& line) noexcept override
+  /// Renders an ellipse.
+  void access(const Ellipse& ellipse) noexcept override
   {
-    primaryColor = line.color;
-    pixelSize = line.pixelSize;
+    primaryColor = ellipse.color;
 
-    for (std::size_t i = 1; i < line.points.size(); i++) {
-      drawLine(line.points[i - 1], line.points[i - 0]);
-    }
+    pixelSize = ellipse.pixelSize;
+
+    auto functor = [this] (int x, int y) {
+      plot(x, y);
+    };
+
+    renderEllipse(ellipse.center[0],
+                  ellipse.center[1],
+                  ellipse.radius[0],
+                  ellipse.radius[1],
+                  functor);
   }
   /// Fills an area on the image
   /// with a certain color.
@@ -542,6 +688,16 @@ public:
     try {
       this->fill(fill.origin, prev, fill.color);
     } catch (...) { }
+  }
+  /// Renders a line.
+  void access(const Line& line) noexcept override
+  {
+    primaryColor = line.color;
+    pixelSize = line.pixelSize;
+
+    for (std::size_t i = 1; i < line.points.size(); i++) {
+      drawLine(line.points[i - 1], line.points[i - 0]);
+    }
   }
   /// Draws a quadrilateral.
   void access(const Quad& quad) noexcept override

@@ -15,6 +15,8 @@ add_executable(pxedit WIN32
   EditMode.cpp
   Editor.hpp
   Editor.cpp
+  EllipseTool.hpp
+  EllipseTool.cpp
   ExportDialog.hpp
   ExportDialog.cpp
   Mode.hpp

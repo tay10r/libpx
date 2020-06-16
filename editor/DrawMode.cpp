@@ -5,6 +5,7 @@
 #include "Tool.hpp"
 
 #include "BucketTool.hpp"
+#include "EllipseTool.hpp"
 #include "PenTool.hpp"
 #include "RectTool.hpp"
 #include "StrokeTool.hpp"
@@ -104,7 +105,7 @@ protected:
             currentTool.reset(createRectTool(editor));
             break;
           case 4:
-            currentTool.reset();
+            currentTool.reset(createEllipseTool(editor));
             break;
           case 5:
             currentTool.reset();

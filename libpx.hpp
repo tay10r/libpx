@@ -58,6 +58,7 @@
 namespace px {
 
 struct Document;
+struct Ellipse;
 struct Fill;
 struct Image;
 struct Line;
@@ -70,18 +71,6 @@ struct Quad;
 /// @defgroup pxImageApi Image API
 ///
 /// @brief Contains all declarations related to the image API.
-
-/// @defgroup pxLineApi Line API
-///
-/// @brief Contains all declarations for lines.
-
-/// @defgroup pxFillApi Flood Fill API
-///
-/// @brief Contains all declarations for flood fills.
-
-/// @defgroup pxQuadApi Quad API
-///
-/// @brief Contains all declarations for quadrilaterals.
 
 /// Creates a new image instance.
 ///
@@ -168,6 +157,16 @@ void closeDoc(Document* doc) noexcept;
 /// @ingroup pxDocumentApi
 Line* addLine(Document* doc);
 
+/// Adds an ellipse to a document.
+///
+/// @exception std::bad_alloc If the ellipse allocation fails
+/// or if the the ellipse array resize fails.
+///
+/// @param doc The document to add the ellipse to.
+///
+/// @return A pointer to the new ellipse instance.
+Ellipse* addEllipse(Document* doc);
+
 /// Adds a fill operation to the document.
 ///
 /// @param doc The document to add the fill operation to.
@@ -221,6 +220,51 @@ void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept;
 /// @ingroup pxDocumentApi
 void setBackground(Document* doc, float r, float g, float b, float a) noexcept;
 
+/// @defgroup pxEllipseApi Ellipse API
+///
+/// @brief Contains all declarations for ellipses.
+
+/// Sets the color of an ellipse.
+///
+/// @param ellipse The ellipse to set the color of.
+///
+/// @ingroup pxEllipseApi
+void setColor(Ellipse* ellipse, float r, float g, float b) noexcept;
+
+/// Sets the center point of an ellipse.
+///
+/// @param ellipse The ellipse to set the enter of.
+/// @param x The X coordinate to assign the center.
+/// @param y The Y coordinate to assign the center.
+void setCenter(Ellipse* ellipse, int x, int y) noexcept;
+
+/// Sets the radius of an ellipse.
+///
+/// @param ellipse The ellipse to set the radius of.
+/// @param x The X component of the radius.
+/// @param y The Y component of the radius.
+void setRadius(Ellipse* ellipse, int x, int y) noexcept;
+
+/// Sets the pixel size of an ellipse.
+///
+/// @param ellipse The ellipse to set the pixel size of.
+///
+/// @param pixelSize The pixel size to assign the ellipse.
+void setPixelSize(Ellipse* ellipse, int pixelSize) noexcept;
+
+/// Resizes an ellipse to fill a rectangle.
+///
+/// @param ellipse The ellipse to resize.
+/// @param x1 The X coordinate of the first point.
+/// @param y1 The Y coordinate of the first point.
+/// @param x2 The X coordinate of the second point.
+/// @param y2 The Y coordinate of the second point.
+void resizeRect(Ellipse* ellipse, int x1, int y1, int x2, int y2) noexcept;
+
+/// @defgroup pxFillApi Flood Fill API
+///
+/// @brief Contains all declarations for flood fills.
+
 /// Sets the origin of a fill operation.
 ///
 /// @param fill The fill operation to set the origin of.
@@ -229,14 +273,6 @@ void setBackground(Document* doc, float r, float g, float b, float a) noexcept;
 ///
 /// @ingroup pxFillApi
 void setFillOrigin(Fill* fill, int x, int y) noexcept;
-
-/// Sets the color of a line.
-///
-/// @param line The line to set the color of.
-/// A new line can be created by calling @ref addLine
-///
-/// @ingroup pxLineApi
-void setColor(Line* line, float r, float g, float b) noexcept;
 
 /// Sets the color of the fill operation.
 ///
@@ -248,12 +284,17 @@ void setColor(Line* line, float r, float g, float b) noexcept;
 /// @ingroup pxFillApi
 void setColor(Fill* fill, float r, float g, float b) noexcept;
 
-/// Sets the stroke color of a quadrilateral.
+/// @defgroup pxLineApi Line API
 ///
-/// @param quad The quadrilateral to modify the color of.
+/// @brief Contains all declarations for lines.
+
+/// Sets the color of a line.
 ///
-/// @ingroup pxQuadApi
-void setColor(Quad* quad, float r, float g, float b) noexcept;
+/// @param line The line to set the color of.
+/// A new line can be created by calling @ref addLine
+///
+/// @ingroup pxLineApi
+void setColor(Line* line, float r, float g, float b) noexcept;
 
 /// Adds a point to a line.
 ///
@@ -263,6 +304,18 @@ void setColor(Quad* quad, float r, float g, float b) noexcept;
 ///
 /// @ingroup pxLineApi
 void addPoint(Line* line, int x, int y);
+
+/// Sets the pixel size of a line.
+///
+/// @param line The line to set the pixel size of.
+/// A new line can be created by calling @ref addLine
+///
+/// @param pixelSize The pixel size to assign. This
+/// acts as both the width and height of the pixel,
+/// since all pixels are squares.
+///
+/// @ingroup pxLineApi
+void setPixelSize(Line* line, int pixelSize) noexcept;
 
 /// Sets the position of an existing point in the line.
 ///
@@ -277,6 +330,17 @@ void addPoint(Line* line, int x, int y);
 /// @ingroup pxLineApi
 bool setPoint(Line* line, std::size_t index, int x, int y) noexcept;
 
+/// @defgroup pxQuadApi Quad API
+///
+/// @brief Contains all declarations for quadrilaterals.
+
+/// Sets the stroke color of a quadrilateral.
+///
+/// @param quad The quadrilateral to modify the color of.
+///
+/// @ingroup pxQuadApi
+void setColor(Quad* quad, float r, float g, float b) noexcept;
+
 /// Sets a point within a quadrilateral.
 ///
 /// @param quad The quadrilateral to set the point of.
@@ -285,18 +349,6 @@ bool setPoint(Line* line, std::size_t index, int x, int y) noexcept;
 ///
 /// @return True on success, false of @p index is out of bounds.
 bool setPoint(Quad* quad, std::size_t index, int x, int y) noexcept;
-
-/// Sets the pixel size of a line.
-///
-/// @param line The line to set the pixel size of.
-/// A new line can be created by calling @ref addLine
-///
-/// @param pixelSize The pixel size to assign. This
-/// acts as both the width and height of the pixel,
-/// since all pixels are squares.
-///
-/// @ingroup pxLineApi
-void setPixelSize(Line* line, int pixelSize) noexcept;
 
 /// Sets the pixel size of a quadrilateral.
 ///
