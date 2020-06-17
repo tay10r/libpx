@@ -91,6 +91,8 @@ class EditorImpl final
   GLuint transformLocation = 0;
   /// The base color of the checkerboard background.
   GLuint checkerboardColorLocation = 0;
+  /// The location of the cursor position variable.
+  GLuint cursorPosLocation = 0;
   /// Releases data allocated by the implementation data.
   ~EditorImpl();
   /// Calculates the transform from window
@@ -366,6 +368,7 @@ bool Editor::initGlData()
 
   impl->transformLocation         = glGetUniformLocation(impl->program, "transform");
   impl->checkerboardColorLocation = glGetUniformLocation(impl->program, "checkerboardColor");
+  impl->cursorPosLocation         = glGetUniformLocation(impl->program, "cursorPos");
 
   return true;
 }
@@ -611,6 +614,8 @@ void Editor::mouseMotion(double x, double y)
   x = ((x - min.x) / size.x) * float(getDocWidth(doc));
   y = ((y - min.y) / size.y) * float(getDocHeight(doc));
 
+  glUniform2i(impl->cursorPosLocation, int(x), int(y));
+
   impl->mode->mouseMotion(unsigned(x), unsigned(y));
 }
 
@@ -682,7 +687,7 @@ uniform sampler2D imageTexture;
 
 uniform float contrast = 0.1;
 
-uniform float checkerboardSize = 10.0f;
+uniform ivec2 cursorPos = ivec2(0, 0);
 
 uniform vec3 checkerboardColor = vec3(1.0f, 1.0f, 1.0f);
 
@@ -692,9 +697,14 @@ void main() {
 
   vec2 pos = floor(texCoord2 * texelSize);
 
+  float hoverMask = ((int(pos.x) == cursorPos.x)
+                  && (int(pos.y) == cursorPos.y)) ? 1 : 0;
+
   float patternMask = mod(pos.x + mod(pos.y, 2.0f), 2.0f);
 
-  patternMask = (1.0f - contrast) + (patternMask * contrast);
+  patternMask = (1.0f - contrast) + (patternMask * contrast) + (0.5f - (0.5f * hoverMask));
+
+  patternMask /= 1.5;
 
   vec4 bg = vec4(patternMask * vec3(1.0f, 1.0f, 1.0f), 1.0f);
 
