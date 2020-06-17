@@ -24,11 +24,15 @@ add_executable(pxedit WIN32
   EllipseTool.cpp
   ExportDialog.hpp
   ExportDialog.cpp
+  Fs.hpp
+  Fs.cpp
   History.hpp
   History.cpp
   ImageIO.hpp
   ImageIO.cpp
   Mode.hpp
+  OpenDialog.hpp
+  OpenDialog.cpp
   PenTool.hpp
   PenTool.cpp
   PoseMode.hpp

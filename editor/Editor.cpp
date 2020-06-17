@@ -27,6 +27,7 @@
 #include "Mode.hpp"
 
 #include "ExportDialog.hpp"
+#include "OpenDialog.hpp"
 #include "SaveDialog.hpp"
 
 #include "DrawMode.hpp"
@@ -97,6 +98,7 @@ EditorImpl::~EditorImpl()
   if (image) {
     closeImage(image);
   }
+
   if (window) {
     glfwDestroyWindow(window);
   }
@@ -406,7 +408,10 @@ void Editor::renderFileMenu()
 {
   if (ImGui::BeginMenu("File", true)) {
 
-    ImGui::MenuItem("Open...");
+    if (ImGui::MenuItem("Open...") && !impl->dialog) {
+      impl->dialog = std::unique_ptr<Dialog>(createOpenDialog());
+    }
+
     ImGui::MenuItem("Save");
     ImGui::MenuItem("Save As...");
 
