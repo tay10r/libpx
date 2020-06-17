@@ -688,12 +688,9 @@ uniform vec3 checkerboardColor = vec3(1.0f, 1.0f, 1.0f);
 
 void main() {
 
-  ivec2 s = textureSize(imageTexture, 0);
+  ivec2 texelSize = textureSize(imageTexture, 0);
 
-  float texelSize = 2.0f / float(s.x);
-
-  //vec2 pos = floor(gl_FragCoord.xy / checkerboardSize);
-  vec2 pos = floor(texCoord2 / texelSize);
+  vec2 pos = floor(texCoord2 * texelSize);
 
   float patternMask = mod(pos.x + mod(pos.y, 2.0f), 2.0f);
 
