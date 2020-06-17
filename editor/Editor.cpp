@@ -27,6 +27,7 @@
 #include "Mode.hpp"
 
 #include "ExportDialog.hpp"
+#include "SaveDialog.hpp"
 
 #include "DrawMode.hpp"
 #include "EditMode.hpp"
@@ -52,6 +53,9 @@ class EditorImpl final
   const float zoomFactor = 1.5f;
   /// The current zoom factor.
   float zoom = 1;
+  /// Whether or not to discard
+  /// modifications made to the document.
+  bool discardChanges = false;
   /// The document modification history.
   /// This is where the document pointer
   /// is retrived from.
@@ -211,6 +215,11 @@ Editor::~Editor()
   delete impl;
 }
 
+bool Editor::canSafelyExit() const noexcept
+{
+  return impl->history.isSaved() || impl->discardChanges;
+}
+
 bool Editor::createWindow()
 {
   impl->window = glfwCreateWindow(640, 480, "PX Editor", NULL, NULL);
@@ -241,11 +250,44 @@ bool Editor::createWindow()
   return true;
 }
 
+void Editor::setDiscardChanges(bool state)
+{
+  impl->discardChanges = state;
+}
+
 Document* Editor::getDocument() noexcept { return impl->history.getDocument(); }
 
 const Document* Editor::getDocument() const noexcept { return impl->history.getDocument(); }
 
 void Editor::snapshotDoc() { impl->history.snapshot(); }
+
+bool Editor::openDoc(const char* path)
+{
+  auto* doc = getDocument();
+
+  ErrorList* errList = nullptr;
+
+  auto success = px::openDoc(doc, path, &errList);
+  if (!success) {
+    printErrorListToStderr(errList);
+    closeErrorList(errList);
+    return false;
+  }
+
+  return true;
+}
+
+bool Editor::saveDoc(const char* path)
+{
+  const auto* doc = getDocument();
+
+  if (px::saveDoc(doc, path)) {
+    impl->history.markSaved();
+    return true;
+  } else {
+    return false;
+  }
+}
 
 const Image* Editor::getImage() const noexcept { return impl->image; }
 
@@ -450,9 +492,17 @@ void Editor::renderUi()
 
   renderMenuBar();
 
+  // TODO : Allow more dialogs to be opened.
   if (impl->dialog) {
     if (!impl->dialog->render(this)) {
       impl->dialog.reset();
+    }
+  } else {
+    // We're going to check if we need
+    // to fire up the unsaved changes dialog.
+
+    if (shouldExit() && !canSafelyExit()) {
+      impl->dialog.reset(createSaveDialog());
     }
   }
 

@@ -12,6 +12,7 @@ class HistoryImpl final
 
   std::vector<Document*> snapshots;
   std::size_t pos = 0;
+  std::size_t saved = 0;
 
   ~HistoryImpl();
 };
@@ -57,6 +58,16 @@ void History::redo()
   if ((impl->pos + 1) < impl->snapshots.size()) {
     impl->pos++;
   }
+}
+
+void History::markSaved()
+{
+  impl->saved = impl->pos;
+}
+
+bool History::isSaved() const noexcept
+{
+  return impl->pos == impl->saved;
 }
 
 HistoryImpl::~HistoryImpl()

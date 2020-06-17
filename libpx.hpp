@@ -59,6 +59,7 @@ namespace px {
 
 struct Document;
 struct Ellipse;
+struct ErrorList;
 struct Fill;
 struct Image;
 struct Line;
@@ -153,6 +154,31 @@ void resizeImage(Image* image, std::size_t width, std::size_t height);
 ///
 /// @ingroup pxDocumentApi
 Document* createDoc();
+
+/// Imports data from an external document.
+///
+/// @param doc A pointer to a document returned from @ref createDoc
+/// @param filename The path to the file to import the data from.
+/// @param errList An optional parameter to store the error list at.
+/// See @ref pxErrorListApi for more information.
+///
+/// @return True on success, false on failure.
+bool openDoc(Document* doc, const char* filename, ErrorList** errList = nullptr);
+
+/// Saves a document to a file.
+///
+/// @param doc The document to save.
+/// @param filename The filename to save the data at.
+///
+/// @return True on success, false on failure.
+/// If a failure occurs, no other functions are called
+/// that may modify errno. To check the reason for failure,
+/// errno would be appropriate.
+///
+/// @return True on success, false on failure.
+///
+/// @ingroup pxDocumentApi
+bool saveDoc(const Document* doc, const char* filename);
 
 /// Releases memory allocated by a document.
 ///
@@ -409,6 +435,106 @@ void render(const Document* doc, float* color, std::size_t w, std::size_t h) noe
 /// @param image The image to render the document onto.
 /// This can be generated with @ref createImage
 void render(const Document* doc, Image* image) noexcept;
+
+/// @defgroup pxErrorListApi Error List API
+///
+/// @brief Used for examining errors reporting from opening a file.
+
+/// Releases memory allocated by the error list.
+///
+/// @param errList The error list to release.
+/// This should be the pointer that is assigned
+/// from calling @ref openDoc
+///
+/// @ingroup pxErrorListApi
+void closeErrorList(ErrorList* errList) noexcept;
+
+/// Prints the error list to the standard error file.
+///
+/// @param errList The error list to print.
+///
+/// @ingroup pxErrorListApi
+void printErrorListToStderr(const ErrorList* errList) noexcept;
+
+/// Prints a single error from the error list to the standard error file.
+///
+/// @param errList The error list to print.
+/// @param error The index of the error to print.
+///
+/// @ingroup pxErrorListApi
+void printErrorToStderr(const ErrorList* errList, std::size_t error) noexcept;
+
+/// Gets the total number of errors in the error list.
+///
+/// @param errList The error list to get the size of.
+///
+/// @return The total number of errors found.
+///
+/// @ingroup pxErrorListApi
+std::size_t getErrorCount(const ErrorList* errList) noexcept;
+
+/// Gets the position of an error within the source file.
+///
+/// @param error The index of the error within the error list.
+/// See @ref getErrorCount for a range of good values.
+///
+/// @return The position of the error within the file.
+///
+/// @ingroup pxErrorListApi
+std::size_t getErrorPosition(const ErrorList* errList, std::size_t error) noexcept;
+
+/// Gets the number of characters in the source file that
+/// the error pertains to. This can be used with @ref getErrorPosition
+/// to determine the range of the error within the source file.
+///
+/// @return The number of characters that the error pertains to.
+///
+/// @ingroup pxErrorListApi
+std::size_t getErrorSize(const ErrorList* errList, std::size_t error) noexcept;
+
+/// Gets the column that the error begins at within the file.
+/// This can be useful to show the user where the error begins at visually.
+///
+/// @return The column that the error begins at.
+/// The first character in a line has a column value of 1.
+///
+/// @ingroup pxErrorListApi
+std::size_t getErrorColumn(const ErrorList* errList, std::size_t error) noexcept;
+
+/// Gets the line number that the error begins at within the file.
+/// This can be useful to show the user where the error begins at visually.
+///
+/// @return The line that the error begins at.
+/// The first line in the file has a line number of 1.
+///
+/// @ingroup pxErrorListApi
+std::size_t getErrorLine(const ErrorList* errList, std::size_t error) noexcept;
+
+/// Gets a human-readable description of the error.
+///
+/// @return A human-readable description of the error.
+///
+/// @ingroup pxErrorListApi
+const char* getErrorDescription(const ErrorList* errList, std::size_t error) noexcept;
+
+/// Gets the source code that the error list pertains to.
+/// This can be used to show the source code content that an error is found at.
+///
+/// @return A pointer to the source code of the document the error list is for.
+/// This string is null terminated, but see @getErrorSourceSize to get the size explicitly.
+///
+/// @ingroup pxErrorListApi
+const char* getErrorSource(const ErrorList* errList) noexcept;
+
+/// Gets the number of bytes in the source code that the errors pertain to.
+/// While the string returned by @ref getErrorSource is null terminated, there
+/// may be null characters in the original file. This ensures that all characters
+/// can be seen.
+///
+/// @return The number of characters in the source code string.
+///
+/// @ingroup pxErrorListApi
+std::size_t getErrorSourceSize(const ErrorList* errList) noexcept;
 
 } // namespace px
 

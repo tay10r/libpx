@@ -19,18 +19,36 @@ public:
   /// @ref Editor::initGl must be called afterwards.
   Editor();
   ~Editor();
+  /// Indicates whether or not changes to
+  /// the current document have been saved.
+  bool canSafelyExit() const noexcept;
   /// Initializes the GL data.
   ///
   /// @return True on success, false on failure.
   bool initGlData();
   /// Iterates the event loop.
   void iterate();
+  /// Opens a document.
+  ///
+  /// @param filename The path to the document to open.
+  ///
+  /// @return True on success, false on failure.
+  bool openDoc(const char* filename);
+  /// Saves the document.
+  ///
+  /// @param path The path to save the file at.
+  ///
+  /// @return True on success, false on failure.
+  bool saveDoc(const char* filename);
   /// Saves the current frame as a PNG file.
   ///
   /// @param filename The path to save the file at.
   ///
   /// @return True on success, false on failure.
   bool savePNG(const char* filename) const noexcept;
+  /// Sets whether or not to discard changes
+  /// to the document.
+  void setDiscardChanges(bool state);
   /// Indicates whether or not the editor
   /// should exit.
   ///

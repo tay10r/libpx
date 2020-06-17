@@ -19,6 +19,13 @@ public:
   Document* getDocument() noexcept;
   /// Gets a pointer to the current document.
   const Document* getDocument() const noexcept;
+  /// Marks the current document as the one that is saved.
+  void markSaved();
+  /// Indicates whether or not the current snapshot
+  /// is the one that is saved.
+  ///
+  /// @return True if it is, false otherwise.
+  bool isSaved() const noexcept;
   /// Pushes a new document to the history stack.
   /// If there were snapshots that were undone, they
   /// are erased at this point and no longer available for redo.

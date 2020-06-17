@@ -1,7 +1,12 @@
 #include "libpx.hpp"
 
+#include <fstream>
+#include <iostream>
 #include <memory>
+#include <sstream>
 #include <vector>
+
+#include <cstring>
 
 namespace px {
 
@@ -279,6 +284,9 @@ struct Node
   virtual Node* copy() const = 0;
 };
 
+/// A type definition for a node smart pointer.
+using NodePtr = std::unique_ptr<Node>;
+
 /// This is the base of any class that has
 /// a stroke. It contains the basic properties
 /// of how the stroke should be drawn.
@@ -390,6 +398,14 @@ struct Line final : public StrokeNode
 
 void addPoint(Line* line, int x, int y)
 {
+  // Check for duplicate point.
+  if (line->points.size() > 0) {
+    const auto& last = line->points[line->points.size() - 1];
+    if ((last[0] == x) && (last[1] == y)) {
+      return;
+    }
+  }
+
   line->points.emplace_back(Vec2 { x, y });
 }
 
@@ -516,6 +532,1207 @@ void resizeImage(Image* image, std::size_t w, std::size_t h)
   image->height = h;
 }
 
+//=====================//
+// Section: Error List //
+//=====================//
+
+/// Contains information on a single error.
+struct Error final
+{
+  /// The stream used to format the error.
+  /// This isn't seen by the end user but it can
+  /// be used to make error reporting easier.
+  std::ostringstream stream;
+  /// A human-readable description of the error.
+  std::string description;
+  /// The line that the error can be found at.
+  std::size_t line = 0;
+  /// The column that the error can be found at.
+  std::size_t column = 0;
+  /// The index within the file that the error begins at.
+  std::size_t index = 0;
+  /// The number of characters that the error pertains to.
+  std::size_t size = 0;
+};
+
+/// Prints an error to a stream.
+///
+/// @param stream The stream to print to.
+/// @param err The error to print.
+///
+/// @return A reference to @p stream.
+std::ostream& operator << (std::ostream& stream, const Error& err)
+{
+  return stream << err.line << ':' << err.column << ": " << err.description.c_str();
+}
+
+struct ErrorList final
+{
+  /// The path to the file that was opened.
+  std::string filename;
+  /// The source code that the errors pertain to.
+  /// This is all the source code in the original file.
+  std::string source;
+  /// The list of errors that were found.
+  std::vector<Error> errors;
+};
+
+void closeErrorList(ErrorList* errList) noexcept
+{
+  delete errList;
+}
+
+void printErrorListToStderr(const ErrorList* errList) noexcept
+{
+  for (std::size_t i = 0; i < errList->errors.size(); i++) {
+    printErrorToStderr(errList, i);
+  }
+}
+
+void printErrorToStderr(const ErrorList* errList, std::size_t index) noexcept
+{
+  if (index >= errList->errors.size()) {
+    return;
+  }
+
+  std::cerr << errList->filename << ':' << errList->errors[index] << std::endl;
+}
+
+const char* getErrorSource(const ErrorList* errList) noexcept
+{
+  return errList->source.c_str();
+}
+
+std::size_t getErrorSourceSize(const ErrorList* errList) noexcept
+{
+  return errList->source.size();
+}
+
+std::size_t getErrorCount(const ErrorList* errList) noexcept
+{
+  return errList->errors.size();
+}
+
+std::size_t getErrorColumn(const ErrorList* errList, std::size_t error) noexcept
+{
+  if (error >= errList->errors.size()) {
+    return 0;
+  }
+
+  return errList->errors[error].column;
+}
+
+std::size_t getErrorLine(const ErrorList* errList, std::size_t error) noexcept
+{
+  if (error >= errList->errors.size()) {
+    return 0;
+  }
+
+  return errList->errors[error].line;
+}
+
+std::size_t getErrorPosition(const ErrorList* errList, std::size_t error) noexcept
+{
+  if (error >= errList->errors.size()) {
+    return 0;
+  }
+
+  return errList->errors[error].index;
+}
+
+std::size_t getErrorSize(const ErrorList* errList, std::size_t error) noexcept
+{
+  if (error >= errList->errors.size()) {
+    return 0;
+  }
+
+  return errList->errors[error].size;
+}
+
+const char* getErrorDescription(const ErrorList* errList, std::size_t error) noexcept
+{
+  if (error >= errList->errors.size()) {
+    return 0;
+  }
+
+  return errList->errors[error].description.c_str();
+}
+
+//========================//
+// Section: Serialization //
+//========================//
+
+namespace {
+
+/// This value indicates the resolution
+/// at which floating point colors are
+/// converting to integer values for encoding
+/// and decoding.
+constexpr std::size_t colorRes() noexcept
+{
+  return 32768;
+}
+
+/// Prints an nth dimensional vector.
+///
+/// @tparam T The type used in the vector components.
+/// @tparam dims The number of dimensions in the vector.
+///
+/// @param v The vector to print.
+template <typename T, std::size_t dims>
+std::ostream& operator << (std::ostream& stream, const Vector<T, dims>& v)
+{
+  for (std::size_t i = 0; i < dims; i++) {
+
+    stream << v[i];
+
+    if ((i + 1) < dims) {
+      stream << ' ';
+    }
+  }
+
+  return stream;
+}
+
+/// Prints an array of vectors.
+/// The appear as a single list of numbers this way.
+///
+/// @tparam T The type used in the vector components.
+/// @tparam dims The number of dimensions in the vector.
+///
+/// @param v The vector array to print.
+template <typename T, std::size_t dims>
+std::ostream& operator << (std::ostream& stream, const std::vector<Vector<T, dims>>& v)
+{
+  for (std::size_t i = 0; i < v.size(); i++) {
+
+    stream << v[i];
+
+    if ((i + 1) < v.size()) {
+      stream << ' ';
+    }
+  }
+
+  return stream;
+}
+
+/// Used for encoding documents into files.
+class Encoder final : public NodeAccessor
+{
+  /// The stream being written to.
+  std::ostream& stream;
+  /// The indentation level for the output file.
+  std::size_t indentation = 0;
+public:
+  Encoder(std::ostream& stream_) : stream(stream_) {}
+  /// Encodes a color.
+  ///
+  /// @param name The name to give the color.
+  /// @param c The color to encode.
+  void encodeColor(const char* name, const Color& c)
+  {
+    indent() << name << ' ' << convertColor(c) << std::endl;
+  }
+  /// Encodes a size field.
+  ///
+  /// @param name The name to give the field.
+  /// @param value The value to print.
+  void encodeSize(const char* name, std::size_t value)
+  {
+    indent() << name << ' ' << value << std::endl;
+  }
+  /// Encodes a node.
+  ///
+  /// @param node The node to encode.
+  void encodeNode(const Node& node) { node.accept(*this); }
+protected:
+  /// Converts a color into a 4 dimensional integer vector.
+  ///
+  /// This is required to keep the parsing simple.
+  static Vector<int, 4> convertColor(const Color& c) noexcept
+  {
+    return Vector<int, 4> {
+      int(c[0] * colorRes()),
+      int(c[1] * colorRes()),
+      int(c[2] * colorRes()),
+      int(c[3] * colorRes())
+    };
+  }
+  /// Prints indentation.
+  std::ostream& indent() {
+    for (std::size_t i = 0; i < indentation; i++) {
+      stream << "  ";
+    }
+    return stream;
+  }
+  /// Encodes a structure.
+  /// The inner structure is printed with a lambda.
+  /// The indentation is increased before the lambda
+  /// is called and restored after the lambda.
+  template <typename Functor>
+  void encodeStruct(const char* name, Functor func)
+  {
+    indent() << name << std::endl;
+
+    indentation++;
+
+    func();
+
+    indentation--;
+
+    indent() << "end" << std::endl;
+  }
+  /// Encodes a stroke node.
+  /// This is used by all derived of this class,
+  /// so it must be called explicitly.
+  void encodeStrokeNode(const StrokeNode& strokeNode)
+  {
+    indent() << "pixel_size " << strokeNode.pixelSize << std::endl;
+    indent() << "color " << convertColor(strokeNode.color) << std::endl;
+  }
+  void access(const Ellipse& ellipse) noexcept override
+  {
+    auto encoder = [this, ellipse] () {
+      encodeStrokeNode(ellipse);
+      indent() << "center " << ellipse.center << std::endl;
+      indent() << "radius " << ellipse.radius << std::endl;
+    };
+
+    encodeStruct("ellipse", encoder);
+  }
+  void access(const Fill& fill) noexcept override
+  {
+    auto encoder = [this, fill] () {
+      indent() << "origin " << fill.origin << std::endl;
+      indent() << "color " << convertColor(fill.color) << std::endl;
+    };
+
+    encodeStruct("fill", encoder);
+  }
+  void access(const Line& line) noexcept override
+  {
+    auto encoder = [this, line] () {
+      encodeStrokeNode(line);
+      indent() << "points " << line.points << " end" << std::endl;
+    };
+
+    encodeStruct("line", encoder);
+  }
+  void access(const Quad& quad) noexcept override
+  {
+    auto encoder = [this, quad] () {
+      encodeStrokeNode(quad);
+      indent();
+      stream << "points ";
+      stream << quad.points[0] << ' ';
+      stream << quad.points[1] << ' ';
+      stream << quad.points[2] << ' ';
+      stream << quad.points[3] << std::endl;
+    };
+
+    encodeStruct("quad", encoder);
+  }
+};
+
+} // namespace
+
+//==========================//
+// Section: Deserialization //
+//==========================//
+
+namespace {
+
+/// Enumerates the several recognized tokens.
+enum class TokenType
+{
+  /// A placeholder until initialized.
+  None,
+  /// A single line comment beginning with '#'
+  Comment,
+  /// A C-style identifier (a-zA-Z_)
+  Identifier,
+  /// An integer (with optional leading '-')
+  Integer,
+  /// A whitespace character (space, tab, newline sequences)
+  Space,
+  /// An invalid character
+  Invalid
+};
+
+struct Token final
+{
+  /// The data from the file.
+  const char* data = "";
+  /// The number of characters in the token.
+  std::size_t size = 0;
+  /// The position of the token in the original file.
+  std::size_t pos = 0;
+  /// The line that the token begins at.
+  std::size_t line = 0;
+  /// The column that the token begins at.
+  std::size_t column = 0;
+  /// The type of this token.
+  TokenType type = TokenType::None;
+  /// Indicates if the token is valid or not.
+  operator bool () const noexcept {
+    return type != TokenType::None;
+  }
+  /// Checks for equality with a certain string literal.
+  bool operator == (const char* id) noexcept
+  {
+    auto idSize = std::strlen(id);
+    if (idSize != size) {
+      return false;
+    }
+
+    return std::memcmp(id, data, size) == 0;
+  }
+  /// Checks for non-equality with a certain string literal.
+  bool operator != (const char* id) noexcept
+  {
+    return !(*this == id);
+  }
+  /// Checks for equality with another token type.
+  inline constexpr bool operator == (TokenType t) noexcept
+  {
+    return type == t;
+  }
+  /// Checks for non-equality with another token type.
+  inline constexpr bool operator != (TokenType t) noexcept
+  {
+    return type != t;
+  }
+};
+
+/// Prints the contents of a token into a stream.
+std::ostream& operator << (std::ostream& output, const Token& t)
+{
+  output << '"';
+  for (std::size_t i = 0; i < t.size; i++) {
+    output << t.data[i];
+  }
+  output << '"';
+  return output;
+}
+
+/// Scans a string for parse-able tokens.
+class Lexer final
+{
+  /// The string being parsed.
+  const char* data = "";
+  /// The size of the string.
+  std::size_t size = 0;
+  /// The current position of the lexer.
+  std::size_t pos = 0;
+  /// The current line the lexer is at.
+  std::size_t line = 1;
+  /// The current column the lexer is at.
+  std::size_t column = 1;
+public:
+  constexpr Lexer(const char* d, std::size_t s)
+    : data(d), size(s) {}
+  /// Scans the input for a token.
+  Token scan() noexcept
+  {
+    auto t = space();
+    if (t) {
+      return t;
+    }
+
+    t = identifier();
+    if (t) {
+      return t;
+    }
+
+    t = number();
+    if (t) {
+      return t;
+    }
+
+    t = comment();
+    if (t) {
+      return t;
+    }
+
+    return fallbackToken();
+  }
+  /// Gets the current lexer position.
+  /// This value can be used to backtrack if necessary.
+  std::size_t getPosition() const noexcept { return pos; }
+  /// Indicates the total number of characters remaining.
+  inline constexpr std::size_t remaining() const noexcept
+  {
+    return (pos < size) ? (size - pos) : 0;
+  }
+  /// Assigns the position of the next scan operation.
+  void setPosition(std::size_t p) noexcept { pos = p; }
+protected:
+  /// Creates a token as a last resort for the caller.
+  /// If there is input, one character is used and is
+  /// considered to be "invalid." If there is no input,
+  /// then an empty token is returned.
+  Token fallbackToken() noexcept
+  {
+    if (remaining() > 0) {
+      return makeToken(TokenType::Invalid, 1);
+    } else {
+      return Token();
+    }
+  }
+  /// Scans for a comment token.
+  Token comment() noexcept
+  {
+    std::size_t match = 0;
+
+    if (!isEqual(match, '#')) {
+      return Token();
+    } else {
+      match++;
+    }
+
+    while (inBounds(match) && !isEqual(match, '\n') && !isEqual(match, '\r')) {
+      match++;
+    }
+
+    return makeToken(TokenType::Comment, match);
+  }
+  /// Scans for an identifier token.
+  Token identifier() noexcept
+  {
+    std::size_t match = 0;
+
+    if (!isInRange(match, 'a', 'z')
+     && !isInRange(match, 'A', 'Z')
+     && !isEqual(match, '_')) {
+      return Token();
+    } else {
+      match++;
+    }
+
+    while (inBounds(match)) {
+      if (isInRange(match, 'a', 'z')
+       || isInRange(match, 'A', 'Z')
+       || isInRange(match, '0', '9')
+       || isEqual(match, '_')) {
+        match++;
+      } else {
+        break;
+      }
+    }
+
+    if (match > 0) {
+      return makeToken(TokenType::Identifier, match);
+    } else {
+      return Token();
+    }
+  }
+  /// Scans for a number token.
+  Token number() noexcept
+  {
+    auto neg = false;
+
+    std::size_t match = 0;
+
+    if (isEqual(match, '-')) {
+      neg = true;
+      match++;
+    }
+
+    while (inBounds(match)) {
+      if (isInRange(match, '0', '9')) {
+        match++;
+      } else {
+        break;
+      }
+    }
+
+    if ((neg && (match > 1)) || (!neg && (match > 0))) {
+      return makeToken(TokenType::Integer, match);
+    } else {
+      return Token();
+    }
+  }
+  /// Scans for a space token.
+  Token space() noexcept
+  {
+    std::size_t match = 0;
+
+    while (inBounds(match)) {
+      if (isEqual(match, ' ')
+       || isEqual(match, '\t')
+       || isEqual(match, '\n')
+       || isEqual(match, '\r')) {
+        match++;
+      } else {
+        break;
+      }
+    }
+
+    if (match > 0) {
+      return makeToken(TokenType::Space, match);
+    } else {
+      return Token();
+    }
+  }
+  /// Creates a token of a certain type and size.
+  inline constexpr Token makeToken(TokenType type, std::size_t s) noexcept
+  {
+    Token token {
+      data + pos,
+      s,
+      pos,
+      line,
+      column,
+      type
+    };
+
+    next(s);
+
+    return token;
+  }
+  /// Indicates if a character is equal to another.
+  inline constexpr bool isEqual(std::size_t offset, char c) const noexcept
+  {
+    return look(offset) == c;
+  }
+  /// Indicates if a character is in a certain range.
+  inline constexpr bool isInRange(std::size_t offset, char begin, char end) const noexcept
+  {
+    char c = look(offset);
+    return (c >= begin) && (c <= end);
+  }
+  /// Indicates if an offset is out of bounds.
+  inline constexpr bool inBounds(std::size_t offset) const noexcept
+  {
+    return (pos + offset) < size;
+  }
+  /// Goes passed a certain number of characters.
+  inline constexpr void next(std::size_t count) noexcept
+  {
+    for (std::size_t i = 0; (i < count) && (pos < size); i++) {
+
+      auto c = data[pos];
+      if (c == '\n') {
+        line++;
+        column = 1;
+      } else if (c > 0) {
+        column++;
+      }
+
+      pos++;
+    }
+  }
+  /// Used for checking the contents of a character
+  /// a certain offset array from the current position.
+  inline constexpr char look(std::size_t offset = 0) const noexcept
+  {
+    return ((pos + offset) < size) ? data[pos + offset] : 0;
+  }
+};
+
+/// Used for storing optional results.
+/// Meant primarily for POD.
+template <typename T>
+struct Optional final
+{
+  T value = T();
+  bool valid = false;
+
+  constexpr Optional() {}
+  constexpr Optional(const T& v) : value(v), valid(true) {}
+};
+
+/// A recursive-decent parser for parsing
+/// document files. The parser fails immediately
+/// after finding the first error.
+class Parser final
+{
+  /// Suppressed error messages go here.
+  std::ostringstream suppressed;
+  /// The tokens found by the lexer.
+  std::vector<Token> tokens;
+  /// The position of the parser among the tokens.
+  std::size_t pos = 0;
+  /// Whether or not the parser has failed.
+  bool failedFlag = false;
+  /// The list of errors found by the parser.
+  ErrorList errorList;
+public:
+  /// Constructs a new parser instance.
+  /// This function will parse the string and
+  /// filter out any tokens that the parser
+  /// will not need.
+  ///
+  /// @param str The string to parse.
+  /// @param size The number of characters in @p str.
+  Parser(const char* str, std::size_t size)
+  {
+    Lexer lexer(str, size);
+
+    while (lexer.remaining() && !failed()) {
+      auto t = lexer.scan();
+      if (t == TokenType::Invalid) {
+        formatError(t) << "Invalid token " << t;
+        break;
+      } else if (t == TokenType::None) {
+        break;
+      } else if ((t == TokenType::Space) || (t == TokenType::Comment)) {
+        continue;
+      } else {
+        tokens.emplace_back(t);
+      }
+    }
+  }
+  /// Indicates whether or not the parser failed.
+  inline constexpr bool failed() const noexcept { return failedFlag; }
+  /// Gets the error list found by the parser.
+  /// Future calls to this function will return
+  /// an empty error list.
+  ///
+  /// @param content The variable containing the origin source code.
+  /// This is assigned to the error list so that the context of the
+  /// error can be shown if needed.
+  ErrorList* getErrorList(const char* filename, std::string&& content)
+  {
+    // Resolve the stream contents to the descriptions.
+    for (auto& err : errorList.errors) {
+      err.description = err.stream.str();
+    }
+
+    errorList.filename = filename;
+    errorList.source = std::move(content);
+
+    return new ErrorList(std::move(errorList));
+  }
+  /// This can be called when nothing is available
+  /// to parse and there is still remaining tokens
+  /// in the parser. It emits an error message describing
+  /// the bad token and moves the parser past it.
+  void badToken()
+  {
+    auto tok = look();
+    formatError(tok) << "Invalid token " << tok;
+    next();
+  }
+  /// Parses for a node.
+  ///
+  /// @return On success, a pointer to a node.
+  /// On failure, a null pointer.
+  NodePtr parseNode()
+  {
+    auto node = parseLineNode();
+    if (node) {
+      return node;
+    }
+
+    node = parseEllipseNode();
+    if (node) {
+      return node;
+    }
+
+    node = parseQuadNode();
+    if (node) {
+      return node;
+    }
+
+    node = parseFillNode();
+    if (node) {
+      return node;
+    }
+
+    return NodePtr();
+  }
+  /// Parses for a color value.
+  ///
+  /// @param name The name of the color value to parse for.
+  ///
+  /// @return Optionally returns a color if the correct one was found.
+  Optional<Color> parseColor(const char* name) noexcept
+  {
+    auto nameTok = look();
+
+    if (!matchID(name)) {
+      return Optional<Color>();
+    }
+
+    auto v = parseVector<4>();
+    if (!v.valid) {
+      formatError(nameTok) << "Failed to match color values following " << nameTok;
+      return Optional<Color>();
+    }
+
+    return Optional<Color>(toColor(v.value));
+  }
+  /// Parses for an integer vector.
+  ///
+  /// @tparam dims The number of dimensions used in the vector.
+  ///
+  /// @return Optionally returns the integer.
+  template <std::size_t dims>
+  Optional<Vector<int, dims>> parseVector() noexcept
+  {
+    using Result = Optional<Vector<int, dims>>;
+
+    auto memo = pos;
+
+    Vector<int, dims> out;
+
+    for (std::size_t i = 0; i < dims; i++) {
+      auto component = parseInt();
+      if (!component.valid) {
+        pos = memo;
+        return Result();
+      } else {
+        out[i] = component.value;
+      }
+    }
+
+    return Result(out);
+  }
+  /// Parses a named vector.
+  ///
+  /// @param name The name of the vector to parse.
+  ///
+  /// @return Optionally returns the vector if it is matched.
+  template <std::size_t dims>
+  Optional<Vector<int, dims>> parseVector(const char* name) noexcept
+  {
+    using Result = Optional<Vector<int, dims>>;
+
+    auto nameTok = look();
+
+    if (!matchID(name)) {
+      return Result();
+    }
+
+    auto v = parseVector<dims>();
+    if (!v.valid) {
+      formatError(nameTok) << "Failed to match vector following " << nameTok;
+      return Result();
+    }
+
+    return v;
+  }
+  /// Parses for a single integer value.
+  ///
+  /// @parame name The name of the value.
+  Optional<int> parseInt(const char* name) noexcept
+  {
+    auto firstTok = look();
+
+    if (!matchID(name)) {
+      return Optional<int>();
+    }
+
+    auto i = parseInt();
+    if (!i.valid) {
+      formatError(firstTok) << "Failed to parse integer following " << firstTok;
+      return Optional<int>();
+    }
+
+    return i;
+  }
+  /// Parses for an integer value from
+  /// the next token.
+  Optional<int> parseInt() noexcept
+  {
+    auto numberToken = look();
+    if (numberToken != TokenType::Integer) {
+      return Optional<int>();
+    }
+
+    next();
+
+    return parseInt(numberToken);
+  }
+  /// Parses a size value.
+  ///
+  /// @param name The name of the size value to parse.
+  ///
+  /// @return Optionally returns the size.
+  Optional<std::size_t> parseSize(const char* name) noexcept
+  {
+    auto tmp = parseInt(name);
+    if (!tmp.valid) {
+      return Optional<std::size_t>();
+    } else if (tmp.value < 0) {
+      formatError(previousTok()) << "Expected '" << name << "' to be positive.";
+      return Optional<std::size_t>();
+    }
+
+    return Optional<std::size_t>(tmp.value);
+  }
+  /// Indicates the number of tokens remaining to be parsed.
+  inline std::size_t remaining() const noexcept
+  {
+    return (pos < tokens.size()) ? tokens.size() - pos : 0;
+  }
+protected:
+  /// Parses for common data found in stroke node derived classes.
+  /// This is meant to be called in a loop that parses the derived class.
+  ///
+  /// @param node A reference to the node that should be assigned the parsed data.
+  ///
+  /// @return True on a match, false on no match.
+  /// False does not indicate an error occurred.
+  bool parseStrokeNode(StrokeNode& node)
+  {
+    auto pixelSize = parseInt("pixel_size");
+    if (pixelSize.valid) {
+      node.pixelSize = pixelSize.value;
+      return true;
+    }
+
+    auto color = parseColor("color");
+    if (color.valid) {
+      node.color = color.value;
+      return true;
+    }
+
+    return false;
+  }
+  /// Parses a list of vertices.
+  ///
+  /// @param name The name of the vertices.
+  /// @param vertices The array to put the vertices into.
+  ///
+  /// @return True on success, false on failure.
+  bool parseVertices(const char* name, std::vector<Vec2>& vertices)
+  {
+    if (!matchID(name)) {
+      return false;
+    }
+
+    while (remaining() && !failed()) {
+
+      if (matchID("end")) {
+        break;
+      }
+
+      auto v = parseVector<2>();
+      if (!v.valid) {
+        formatError(look()) << "Failed to parse vector";
+        return false;
+      } else {
+        vertices.emplace_back(v.value);
+      }
+    }
+
+    return true;
+  }
+  /// Parses for a set list of vertices.
+  bool parseVertices(const char* name, Vec2* vertices, std::size_t count) noexcept
+  {
+    auto firstTok = look();
+
+    if (!matchID(name)) {
+      return false;
+    }
+
+    for (std::size_t i = 0; i < count; i++) {
+
+      auto v = parseVector<2>();
+      if (!v.valid) {
+        formatError(firstTok) << "Failed to match point " << i;
+        return false;
+      }
+
+      vertices[i] = v.value;
+    }
+
+    return true;
+  }
+  /// Attempts to parse a fill node.
+  NodePtr parseFillNode()
+  {
+    auto firstTok = look();
+
+    if (!matchID("fill")) {
+      return NodePtr();
+    }
+
+    Fill fill;
+
+    while (remaining() && !failed()) {
+
+      auto c = parseColor("color");
+      if (c.valid) {
+        fill.color = c.value;
+        continue;
+      }
+
+      auto v = parseVector<2>("origin");
+      if (v.valid) {
+        fill.origin = v.value;
+        continue;
+      }
+
+      if (matchID("end")) {
+        break;
+      } else if (failed()) {
+        return NodePtr();
+      } else {
+        formatError(firstTok) << "Missing 'end' statement";
+        return NodePtr();
+      }
+    }
+
+    if (failed()) {
+      return NodePtr();
+    } else {
+      return NodePtr(new Fill(std::move(fill)));
+    }
+  }
+  /// Attempts to parse an ellipse node.
+  NodePtr parseEllipseNode()
+  {
+    auto firstTok = look();
+
+    if (!matchID("ellipse")) {
+      return NodePtr();
+    }
+
+    Ellipse ellipse;
+
+    while (remaining() && !failed()) {
+
+      if (parseStrokeNode(ellipse)) {
+        continue;
+      }
+
+      auto v = parseVector<2>("center");
+      if (v.valid) {
+        ellipse.center = v.value;
+        continue;
+      }
+
+      v = parseVector<2>("radius");
+      if (v.valid) {
+        ellipse.radius = v.value;
+        continue;
+      }
+
+      if (matchID("end")) {
+        break;
+      } else if (failed()) {
+        break;
+      } else {
+        formatError(firstTok) << "Missing 'end' statement.";
+        return NodePtr();
+      }
+    }
+
+    if (failed()) {
+      return NodePtr();
+    } else {
+      return NodePtr(new Ellipse(std::move(ellipse)));
+    }
+  }
+  /// Attempts to parse a line node.
+  NodePtr parseLineNode()
+  {
+    auto firstTok = look();
+
+    if (!matchID("line")) {
+      return NodePtr();
+    }
+
+    Line line;
+
+    while (remaining() && !failed() && !matchID("end")) {
+
+      if (parseStrokeNode(line)) {
+        continue;
+      }
+
+      if (parseVertices("points", line.points)) {
+        continue;
+      }
+
+      if (!failed()) {
+        formatError(firstTok) << "Missing 'end' statement.";
+        return NodePtr();
+      }
+    }
+
+    if (failed()) {
+      return NodePtr();
+    } else {
+      return NodePtr(new Line(std::move(line)));
+    }
+  }
+  /// Parses for a quadrilateral node.
+  NodePtr parseQuadNode()
+  {
+    auto firstTok = look();
+
+    if (!matchID("quad")) {
+      return NodePtr();
+    }
+
+    Quad quad;
+
+    while (remaining() && !failed() && !matchID("end")) {
+
+      if (parseStrokeNode(quad)) {
+        continue;
+      }
+
+      if (parseVertices("points", quad.points, 4)) {
+        continue;
+      }
+
+      if (!failed()) {
+        formatError(firstTok) << "Missing 'end' statement.";
+        return NodePtr();
+      }
+    }
+
+    if (failed()) {
+      return NodePtr();
+    } else {
+      return NodePtr(new Quad(std::move(quad)));
+    }
+  }
+  /// Converts an integer vector to a color value.
+  Color toColor(const Vector<int, 4>& v)
+  {
+    return Color {
+      float(v[0]) / colorRes(),
+      float(v[1]) / colorRes(),
+      float(v[2]) / colorRes(),
+      float(v[3]) / colorRes()
+    };
+  }
+  /// Attempts to match a name.
+  /// If a name is matched, then the
+  /// parser is moved passed its position.
+  ///
+  /// @param name The name to match.
+  ///
+  /// @return True if the name was found,
+  /// false if it was not.
+  bool matchID(const char* name) noexcept
+  {
+    auto nameToken = look();
+    if (nameToken != TokenType::Identifier) {
+      return false;
+    }
+
+    if (nameToken != name) {
+      return false;
+    }
+
+    next();
+
+    return true;
+  }
+  /// Parses a decimal integer from a string.
+  ///
+  /// @param str A pointer to the string to parse.
+  /// @param s The number of characters in the string.
+  ///
+  /// @return On success, a valid integer instance is returned.
+  /// On failure, an optional container that evaluates to zero.
+  Optional<int> parseInt(const Token& tok) noexcept
+  {
+    const char* str = tok.data;
+    std::size_t s = tok.size;
+
+    if (!s) {
+      return Optional<int>();
+    }
+
+    std::size_t pos = 0;
+
+    bool neg = (str[0] == '-');
+    if (neg) {
+      pos++;
+    }
+
+    int value = 0;
+
+    auto isDec = [](char c) { return (c >= '0') && (c <= '9'); };
+
+    while (pos < s) {
+
+      if (!isDec(str[pos])) {
+        formatError(tok) << "Non-decimal character found in " << tok;
+        break;
+      }
+
+      value *= 10;
+      value += int(str[pos] - '0');
+
+      pos++;
+    }
+
+    return neg ? -value : value;
+  }
+  /// Gets a previous token that the parser
+  /// has moved passed.
+  Token previousTok(std::size_t offset = 1) const noexcept
+  {
+    if (offset > pos) {
+      return Token();
+    }
+
+    return tokens[pos - offset];
+  }
+  /// Goes to the next number of tokens.
+  ///
+  /// @param count The number of tokens to go passed.
+  void next(std::size_t count = 1) noexcept
+  {
+    pos += count;
+  }
+  /// Gets a token at a certain offset.
+  Token look(std::size_t offset = 0) const noexcept
+  {
+    if (inBounds(offset)) {
+      return tokens[pos + offset];
+    } else {
+      return Token();
+    }
+  }
+  /// Indicates if a certain offset is in bounds.
+  inline bool inBounds(std::size_t offset) const noexcept
+  {
+    return (pos + offset) < tokens.size();
+  }
+  /// Creates an error and returns it for formatting.
+  ///
+  /// @param t The token that caused the error.
+  /// The position information is used to indicate
+  /// where the error occurred.
+  ///
+  /// @return A reference to the stream that can be
+  /// used to format the error.
+  std::ostream& formatError(const Token& t)
+  {
+    if (failedFlag) {
+      return suppressed;
+    }
+
+    failedFlag = true;
+
+    Error error {
+      std::ostringstream(),
+      std::string(),
+      t.line,
+      t.column,
+      t.pos,
+      t.size
+    };
+
+    errorList.errors.emplace_back(std::move(error));
+
+    return errorList.errors[errorList.errors.size() - 1].stream;
+  }
+};
+
+} // namespace
+
 //===================//
 // Section: Document //
 //===================//
@@ -561,6 +1778,89 @@ void closeDoc(Document* doc) noexcept
 Document* copyDoc(const Document* doc)
 {
   return new Document(*doc);
+}
+
+bool openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
+{
+  if (!filename) {
+    return false;
+  }
+
+  std::ifstream file(filename);
+  if (!file.good()) {
+    return false;
+  }
+
+  std::stringstream buf;
+
+  buf << file.rdbuf();
+
+  std::string content(buf.str());
+
+  Parser parser(content.data(), content.size());
+
+  while (parser.remaining() && !parser.failed()) {
+
+    auto w = parser.parseSize("width");
+    if (w.valid) {
+      doc->width = w.value;
+      continue;
+    }
+
+    auto h = parser.parseSize("height");
+    if (h.valid) {
+      doc->height = h.value;
+      continue;
+    }
+
+    auto bg = parser.parseColor("background");
+    if (bg.valid) {
+      doc->background = bg.value;
+      continue;
+    }
+
+    auto node = parser.parseNode();
+    if (node) {
+      doc->nodes.emplace_back(std::move(node));
+      continue;
+    }
+
+    parser.badToken();
+    break;
+  }
+
+  if (parser.failed()) {
+
+    if (errListPtr) {
+      *errListPtr = parser.getErrorList(filename, std::move(content));
+    }
+
+    return false;
+  }
+
+  std::printf("node count: %u\n", unsigned(doc->nodes.size()));
+
+  return true;
+}
+
+bool saveDoc(const Document* doc, const char* filename)
+{
+  std::ofstream file(filename);
+  if (!file.good()) {
+    return false;
+  }
+
+  Encoder encoder(file);
+
+  encoder.encodeSize("width", doc->width);
+  encoder.encodeSize("height", doc->height);
+  encoder.encodeColor("background", doc->background);
+
+  for (const auto& node : doc->nodes) {
+    encoder.encodeNode(*node);
+  }
+
+  return true;
 }
 
 Ellipse* addEllipse(Document* doc)
@@ -624,8 +1924,8 @@ void setBackground(Document* doc, float r, float g, float b, float a) noexcept
 ///
 /// @param cx The center X component.
 /// @param cy The center Y component.
-/// @param rx The X radius
-/// @param ry The Y radius
+/// @param xRadius The X radius
+/// @param yRadius The Y radius
 /// @param functor Receives the points to plot on the ellipse.
 template <typename Functor>
 void renderEllipse(int cx, int cy, int xRadius, int yRadius, Functor functor) noexcept

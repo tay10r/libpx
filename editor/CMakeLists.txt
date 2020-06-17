@@ -35,6 +35,8 @@ add_executable(pxedit WIN32
   PoseMode.cpp
   RectTool.hpp
   RectTool.cpp
+  SaveDialog.hpp
+  SaveDialog.cpp
   StrokeTool.hpp
   StrokeTool.cpp)
 

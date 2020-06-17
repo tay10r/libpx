@@ -1,4 +1,4 @@
-#include "ExportDialog.hpp"
+#include "SaveDialog.hpp"
 
 #include "Dialog.hpp"
 #include "Editor.hpp"
@@ -22,17 +22,17 @@ constexpr char dirSeparator() noexcept
 #endif
 }
 
-class ExportDialog final : public Dialog
+class SaveDialog final : public Dialog
 {
   char directory[4096];
   char filename[4096];
   std::unique_ptr<pfd::select_folder> dialog;
 public:
-  ExportDialog() : Dialog("Export Dialog")
+  SaveDialog() : Dialog("Save Document")
   {
     std::memset(directory, 0, sizeof(directory));
     std::memset(filename, 0, sizeof(filename));
-    std::strcat(filename, "untitled.png");
+    std::strcat(filename, "untitled.px");
   }
 protected:
   void renderInner(Editor* editor) override
@@ -51,14 +51,15 @@ protected:
 
     ImGui::InputText("Filename", filename, sizeof(filename));
 
-    if (ImGui::Button("Export") && !dialog) {
-      savePNG(editor);
+    if (ImGui::Button("Save") && !dialog) {
+      saveDoc(editor);
       close();
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("Cancel") && !dialog) {
+      editor->setDiscardChanges(true);
       close();
     }
   }
@@ -88,7 +89,7 @@ protected:
       dialog.reset();
     }
   }
-  void savePNG(Editor* editor)
+  void saveDoc(Editor* editor)
   {
     std::string fullPath(directory);
 
@@ -99,16 +100,16 @@ protected:
     fullPath += filename;
 
     if (!fullPath.empty()) {
-      editor->savePNG(fullPath.c_str());
+      editor->saveDoc(fullPath.c_str());
     }
   }
 };
 
 } // namespace
 
-Dialog* createExportDialog()
+Dialog* createSaveDialog()
 {
-  return new ExportDialog();
+  return new SaveDialog();
 }
 
 } // namespace px
