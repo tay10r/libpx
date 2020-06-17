@@ -300,6 +300,13 @@ struct StrokeNode : public Node
   Color color = black();
 };
 
+/// Evaluates a number to a safe pixel size.
+/// A pixel size must be greater than or equal to 1.
+inline constexpr int safePixelSize(int in) noexcept
+{
+  return (in <= 0) ? 1 : in;
+}
+
 } // namespace
 
 struct Ellipse final : public StrokeNode
@@ -335,7 +342,7 @@ void setColor(Ellipse* ellipse, float r, float g, float b) noexcept
 
 void setPixelSize(Ellipse* ellipse, int pixelSize) noexcept
 {
-  ellipse->pixelSize = absolute(pixelSize);
+  ellipse->pixelSize = safePixelSize(pixelSize);
 }
 
 void resizeRect(Ellipse* ellipse, int x1, int y1, int x2, int y2) noexcept
@@ -422,7 +429,7 @@ bool setPoint(Line* line, std::size_t index, int x, int y) noexcept
 
 void setPixelSize(Line* line, int pixelSize) noexcept
 {
-  line->pixelSize = absolute(pixelSize);
+  line->pixelSize = safePixelSize(pixelSize);
 }
 
 void setColor(Line* line, float r, float g, float b) noexcept
@@ -466,7 +473,7 @@ void setColor(Quad* quad, float r, float g, float b) noexcept
 
 void setPixelSize(Quad* quad, int pixelSize) noexcept
 {
-  quad->pixelSize = absolute(pixelSize);
+  quad->pixelSize = safePixelSize(pixelSize);
 }
 
 //================//
@@ -1380,7 +1387,7 @@ protected:
   {
     auto pixelSize = parseInt("pixel_size");
     if (pixelSize.valid) {
-      node.pixelSize = pixelSize.value;
+      node.pixelSize = safePixelSize(pixelSize.value);
       return true;
     }
 
@@ -2135,8 +2142,8 @@ public:
   /// @param p The point to plot within the color buffer.
   void plot(const Vec2& p)
   {
-    Vec2 min { p - pixelSize };
-    Vec2 max { p + pixelSize };
+    Vec2 min { p - (pixelSize - 1) };
+    Vec2 max = p;
 
     const Vec2 imageMin = Vec2 { 0, 0 };
     const Vec2 imageMax = Vec2 { int(width), int(height) };
@@ -2144,8 +2151,8 @@ public:
     min = clip(min, imageMin, imageMax);
     max = clip(max, imageMin, imageMax);
 
-    for (int y = min[1]; y < max[1]; y++) {
-      for (int x = min[0]; x < max[0]; x++) {
+    for (int y = min[1]; y <= max[1]; y++) {
+      for (int x = min[0]; x <= max[0]; x++) {
         setPixel(x, y, primaryColor);
       }
     }
