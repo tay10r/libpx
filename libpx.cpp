@@ -258,6 +258,7 @@ namespace {
 
 constexpr Color white() noexcept { return Color { 1, 1, 1, 1 }; }
 constexpr Color black() noexcept { return Color { 0, 0, 0, 1 }; }
+constexpr Color transparent() noexcept { return Color { 0, 0, 0, 0 }; }
 
 /// Used for visiting nodes in the scene graph.
 class NodeAccessor
@@ -1747,7 +1748,7 @@ struct Document final
   /// The height of the document, in pixels.
   std::size_t height = 64;
   /// The default background color.
-  Color background = white();
+  Color background = transparent();
   /// Makes a new document.
   Document() {}
   /// Makes a copy of the document.

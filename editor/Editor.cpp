@@ -57,6 +57,9 @@ class EditorImpl final
   /// Whether or not to discard
   /// modifications made to the document.
   bool discardChanges = false;
+  /// The base color of the checkerboard background.
+  /// This should only be changed for color theme purposes.
+  float checkerboardColor[3] { 1.0f, 1.0f, 1.0f };
   /// The document modification history.
   /// This is where the document pointer
   /// is retrived from.
@@ -86,6 +89,8 @@ class EditorImpl final
   GLuint program = 0;
   /// The location of the image transformation.
   GLuint transformLocation = 0;
+  /// The base color of the checkerboard background.
+  GLuint checkerboardColorLocation = 0;
   /// Releases data allocated by the implementation data.
   ~EditorImpl();
   /// Calculates the transform from window
@@ -359,7 +364,8 @@ bool Editor::initGlData()
 
   glUseProgram(impl->program);
 
-  impl->transformLocation = glGetUniformLocation(impl->program, "transform");
+  impl->transformLocation         = glGetUniformLocation(impl->program, "transform");
+  impl->checkerboardColorLocation = glGetUniformLocation(impl->program, "checkerboardColor");
 
   return true;
 }
@@ -541,6 +547,11 @@ void Editor::renderDocument()
 
   glUniformMatrix4fv(impl->transformLocation, 1, GL_FALSE /* no transpose */, glm::value_ptr(transform));
 
+  glUniform3f(impl->checkerboardColorLocation,
+              impl->checkerboardColor[0],
+              impl->checkerboardColor[1],
+              impl->checkerboardColor[2]);
+
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, impl->texture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, docWidth, docHeight, 0, GL_RGBA, GL_FLOAT, getColorBuffer(impl->image));
@@ -665,10 +676,38 @@ out vec4 color;
 
 in vec2 texCoord2;
 
+in vec4 gl_FragCoord;
+
 uniform sampler2D imageTexture;
 
+uniform float contrast = 0.1;
+
+uniform float checkerboardSize = 10.0f;
+
+uniform vec3 checkerboardColor = vec3(1.0f, 1.0f, 1.0f);
+
 void main() {
-  color = texture(imageTexture, texCoord2);
+
+  ivec2 s = textureSize(imageTexture, 0);
+
+  float texelSize = 2.0f / float(s.x);
+
+  //vec2 pos = floor(gl_FragCoord.xy / checkerboardSize);
+  vec2 pos = floor(texCoord2 / texelSize);
+
+  float patternMask = mod(pos.x + mod(pos.y, 2.0f), 2.0f);
+
+  patternMask = (1.0f - contrast) + (patternMask * contrast);
+
+  vec4 bg = vec4(patternMask * vec3(1.0f, 1.0f, 1.0f), 1.0f);
+
+  vec4 fg = texture(imageTexture, texCoord2);
+
+  // TODO : Remove premultiply here when it is
+  // implemented beforehand
+  fg.rgb = fg.rgb * fg.a;
+
+  color = fg + (bg * (1.0f - fg.a));
 }
 )";
 
