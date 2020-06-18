@@ -235,6 +235,19 @@ constexpr Color clip(const Color& in, float min = 0, float max = 1) noexcept
   };
 }
 
+/// Premultiplies the alpha channel.
+///
+/// @param c The color to premultiply the alpha channel of.
+///
+/// @return The resultant color.
+constexpr Color premultiply(const Color& c) noexcept
+{
+  return Color { c[0] * c[3],
+                 c[1] * c[3],
+                 c[2] * c[3],
+                 c[3] };
+}
+
 /// Indicates if two 2D vectors are equal.
 inline bool operator == (const Vec2& a, const Vec2& b) noexcept
 {
@@ -2547,6 +2560,8 @@ class Painter final : public NodeAccessor
   std::size_t pixelSize = 1;
   /// The current material used to paint with.
   Color primaryColor = Color { 0, 0, 0, 0 };
+  /// The current layer opacity.
+  float opacity = 1.0f;
   /// The color buffer being rendered to.
   float* colorBuffer = nullptr;
   /// The width of the color buffer, in pixels.
@@ -2558,7 +2573,7 @@ public:
   /// Renders an ellipse.
   void access(const Ellipse& ellipse) noexcept override
   {
-    primaryColor = ellipse.color;
+    setPrimaryColor(ellipse.color);
 
     pixelSize = ellipse.pixelSize;
 
@@ -2582,18 +2597,21 @@ public:
 
     auto prev = getPixel(fill.origin);
 
-    if (almostEqual(prev, fill.color)) {
+    setPrimaryColor(fill.color);
+
+    if (almostEqual(prev, primaryColor)) {
       return;
     }
 
     try {
-      this->fill(fill.origin, prev, fill.color);
+      this->fill(fill.origin, prev);
     } catch (...) { }
   }
   /// Renders a line.
   void access(const Line& line) noexcept override
   {
-    primaryColor = line.color;
+    setPrimaryColor(line.color);
+
     pixelSize = line.pixelSize;
 
     for (std::size_t i = 1; i < line.points.size(); i++) {
@@ -2603,7 +2621,7 @@ public:
   /// Draws a quadrilateral.
   void access(const Quad& quad) noexcept override
   {
-    primaryColor = quad.color;
+    setPrimaryColor(quad.color);
 
     pixelSize = quad.pixelSize;
 
@@ -2613,15 +2631,20 @@ public:
     drawLine(quad.points[3], quad.points[0]);
   }
   /// Clears the contents of the color buffer.
+  ///
+  /// @param c The color to clear the color buffer with.
+  /// This is premultiplied within the function call.
   void clear(const Color& c) noexcept
   {
     unsigned max = width * height * 4;
 
+    Color bg = premultiply(c);
+
     for (unsigned i = 0; i < max; i += 4) {
-      colorBuffer[i + 0] = c[0];
-      colorBuffer[i + 1] = c[1];
-      colorBuffer[i + 2] = c[2];
-      colorBuffer[i + 3] = c[3];
+      colorBuffer[i + 0] = bg[0];
+      colorBuffer[i + 1] = bg[1];
+      colorBuffer[i + 2] = bg[2];
+      colorBuffer[i + 3] = bg[3];
     }
   }
   void drawLine(const Vec2& a, const Vec2& b) noexcept
@@ -2679,7 +2702,25 @@ public:
 
     for (int y = min[1]; y <= max[1]; y++) {
       for (int x = min[0]; x <= max[0]; x++) {
-        setPixel(x, y, primaryColor);
+        blend(x, y, primaryColor);
+      }
+    }
+  }
+  /// Renders a series of layers.
+  ///
+  /// @param layers The layers to be rendered.
+  void renderLayers(const std::vector<LayerPtr>& layers)
+  {
+    for (const auto& layer : layers) {
+
+      if (!layer->visible) {
+        continue;
+      }
+
+      opacity = layer->opacity;
+
+      for (const auto& node : layer->nodes) {
+        node->accept(*this);
       }
     }
   }
@@ -2690,13 +2731,23 @@ public:
   /// @param x The X coordinate of the pixel to set.
   /// @param y The Y coordinate of the pixel to set.
   /// @param c The color to assign the pixel.
-  inline void setPixel(int x, int y, const Color& c)
+  inline void blend(int x, int y, const Color& c)
   {
     auto* dst = &colorBuffer[((y * width) + x) * 4];
-    dst[0] = c[0];
-    dst[1] = c[1];
-    dst[2] = c[2];
-    dst[3] = c[3];
+
+    Color bg {
+      dst[0],
+      dst[1],
+      dst[2],
+      dst[3]
+    };
+
+    auto result = c + (bg * (1.0f - c[3]));
+
+    dst[0] = result[0];
+    dst[1] = result[1];
+    dst[2] = result[2];
+    dst[3] = result[3];
   }
   /// Sets the value of a pixel.
   ///
@@ -2704,9 +2755,20 @@ public:
   ///
   /// @param p The position of the pixel to set.
   /// @param c The color to assign the pixel.
-  inline void setPixel(const Vec2& p, const Color& c)
+  inline void blend(const Vec2& p, const Color& c)
   {
-    return setPixel(p[0], p[1], c);
+    return blend(p[0], p[1], c);
+  }
+  /// Assigns the primary color being used by the painter.
+  ///
+  /// @note This function will premultiply the alpha channel of @p c.
+  ///
+  /// @param c The color to assign to the painter.
+  /// The alpha channel is ignored and the current
+  /// layer opacity is used in place of it.
+  inline void setPrimaryColor(const Color& c)
+  {
+    primaryColor = premultiply(Color { c[0], c[1], c[2], opacity });
   }
   /// Gets the color from a pixel at a certain point.
   ///
@@ -2745,12 +2807,12 @@ public:
   }
 protected:
   /// Fills an area on the image with a color.
+  /// The primary color is used as the fill color.
   ///
   /// @param origin The point to start at.
   ///
   /// @param prev The previous color.
-  /// @param next The color to be assigned.
-  void fill(const Vec2& origin, const Color& prev, const Color& next)
+  void fill(const Vec2& origin, const Color& prev)
   {
     if (!inBounds(origin)) {
       return;
@@ -2786,7 +2848,7 @@ protected:
 
       while ((x1 >= 0) && (x1 < xMax) && almostEqual(getPixel(x1, p[1]), prev)) {
 
-        setPixel(x1, p[1], next);
+        blend(x1, p[1], primaryColor);
 
         if (!spanAbove && (p[1] > 0) && almostEqual(getPixel(x1, p[1] - 1), prev)) {
           stack.push_back(Vec2 { x1, p[1] - 1 });
@@ -2814,16 +2876,7 @@ void render(const Document* doc, float* colorBuffer, std::size_t w, std::size_t 
 
   painter.clear(doc->background);
 
-  for (const auto& layer : doc->layers) {
-
-    if (!layer->visible) {
-      continue;
-    }
-
-    for (const auto& node : layer->nodes) {
-      node->accept(painter);
-    }
-  }
+  painter.renderLayers(doc->layers);
 }
 
 void render(const Document* doc, Image* image) noexcept

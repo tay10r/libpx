@@ -714,7 +714,7 @@ void main() {
 
   // TODO : Remove premultiply here when it is
   // implemented beforehand
-  fg.rgb = fg.rgb * fg.a;
+  //fg.rgb = fg.rgb * fg.a;
 
   color = fg + (bg * (1.0f - fg.a));
 }
