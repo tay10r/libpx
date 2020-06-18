@@ -236,6 +236,8 @@ bool Editor::createWindow()
     return false;
   }
 
+  glfwMaximizeWindow(impl->window);
+
   glfwSetWindowUserPointer(impl->window, this);
 
   glfwSetCursorPosCallback(impl->window, &mouseMotionCallback);
