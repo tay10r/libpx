@@ -43,7 +43,8 @@ public:
     line = addLine(getDocument(), requireCurrentLayer());
 
     setPixelSize(line, getPixelSize());
-    setColor(line, color[0], color[1], color[2]);
+    setColor(line, color[0], color[1], color[2], color[3]);
+    setBlendMode(line, getBlendMode());
     addPoint(line, pos[0], pos[1]);
     addPoint(line, pos[0], pos[1]);
   }

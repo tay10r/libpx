@@ -58,7 +58,8 @@ public:
 
     setPoint(rect, 0, pos[0], pos[1]);
     setPixelSize(rect, getPixelSize());
-    setColor(rect, color[0], color[1], color[2]);
+    setColor(rect, color[0], color[1], color[2], color[3]);
+    setBlendMode(rect, getBlendMode());
 
     startPos[0] = pos[0];
     startPos[1] = pos[1];

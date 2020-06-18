@@ -34,7 +34,8 @@ public:
     Fill* fill = addFill(getDocument(), requireCurrentLayer());
     if (fill) {
       setFillOrigin(fill, cursor[0], cursor[1]);
-      setColor(fill, color[0], color[1], color[2]);
+      setColor(fill, color[0], color[1], color[2], color[3]);
+      setBlendMode(fill, getBlendMode());
     }
   }
   /// Just a stub.

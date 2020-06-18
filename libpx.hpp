@@ -66,6 +66,20 @@ struct Layer;
 struct Line;
 struct Quad;
 
+/// Describes how two colors are combined.
+enum class BlendMode
+{
+  /// The normal blend mode applies simple
+  /// alpha compositing to the image. It is
+  /// usually the default and expected behavior.
+  Normal,
+  /// This is used to subtract color from
+  /// the resultant image. It can be used for
+  /// erasing contents of the image as well as
+  /// removing certain color components.
+  Subtract
+};
+
 /// @defgroup pxImageApi Image API
 ///
 /// @brief Contains all declarations related to the image API.
@@ -422,13 +436,23 @@ void setLayerVisibility(Layer* layer, bool visibility) noexcept;
 /// @param ellipse The ellipse to set the color of.
 ///
 /// @ingroup pxEllipseApi
-void setColor(Ellipse* ellipse, float r, float g, float b) noexcept;
+void setColor(Ellipse* ellipse, float r, float g, float b, float a = 1) noexcept;
+
+/// Sets the blend mode of the ellipse.
+///
+/// @param ellipse The ellipse to modify the blend mode of.
+/// @param mode The blend mode to assign the ellipse.
+///
+/// @ingroup pxEllipseApi
+void setBlendMode(Ellipse* ellipse, BlendMode mode) noexcept;
 
 /// Sets the center point of an ellipse.
 ///
 /// @param ellipse The ellipse to set the enter of.
 /// @param x The X coordinate to assign the center.
 /// @param y The Y coordinate to assign the center.
+///
+/// @ingroup pxEllipseApi
 void setCenter(Ellipse* ellipse, int x, int y) noexcept;
 
 /// Sets the radius of an ellipse.
@@ -436,6 +460,8 @@ void setCenter(Ellipse* ellipse, int x, int y) noexcept;
 /// @param ellipse The ellipse to set the radius of.
 /// @param x The X component of the radius.
 /// @param y The Y component of the radius.
+///
+/// @ingroup pxEllipseApi
 void setRadius(Ellipse* ellipse, int x, int y) noexcept;
 
 /// Sets the pixel size of an ellipse.
@@ -443,6 +469,8 @@ void setRadius(Ellipse* ellipse, int x, int y) noexcept;
 /// @param ellipse The ellipse to set the pixel size of.
 ///
 /// @param pixelSize The pixel size to assign the ellipse.
+///
+/// @ingroup pxEllipseApi
 void setPixelSize(Ellipse* ellipse, int pixelSize) noexcept;
 
 /// Resizes an ellipse to fill a rectangle.
@@ -452,11 +480,21 @@ void setPixelSize(Ellipse* ellipse, int pixelSize) noexcept;
 /// @param y1 The Y coordinate of the first point.
 /// @param x2 The X coordinate of the second point.
 /// @param y2 The Y coordinate of the second point.
+///
+/// @ingroup pxEllipseApi
 void resizeRect(Ellipse* ellipse, int x1, int y1, int x2, int y2) noexcept;
 
 /// @defgroup pxFillApi Flood Fill API
 ///
 /// @brief Contains all declarations for flood fills.
+
+/// Sets the blend mode of the fill operation.
+///
+/// @param fill The fill operation to set the blend mode of.
+/// @param mode The blend mode to assign.
+///
+/// @ingroup pxFillApi
+void setBlendMode(Fill* fill, BlendMode mode) noexcept;
 
 /// Sets the origin of a fill operation.
 ///
@@ -475,11 +513,19 @@ void setFillOrigin(Fill* fill, int x, int y) noexcept;
 /// @param b The blue channel value of the fill operation (0 to 1)
 ///
 /// @ingroup pxFillApi
-void setColor(Fill* fill, float r, float g, float b) noexcept;
+void setColor(Fill* fill, float r, float g, float b, float a = 1) noexcept;
 
 /// @defgroup pxLineApi Line API
 ///
 /// @brief Contains all declarations for lines.
+
+/// Sets the blend mode of the line.
+///
+/// @param line The line to set the blend mode of.
+/// @param mode The blend mode to assign the line.
+///
+/// @ingroup pxLineApi
+void setBlendMode(Line* line, BlendMode mode) noexcept;
 
 /// Sets the color of a line.
 ///
@@ -487,7 +533,7 @@ void setColor(Fill* fill, float r, float g, float b) noexcept;
 /// A new line can be created by calling @ref addLine
 ///
 /// @ingroup pxLineApi
-void setColor(Line* line, float r, float g, float b) noexcept;
+void setColor(Line* line, float r, float g, float b, float a = 1) noexcept;
 
 /// Adds a point to a line.
 ///
@@ -579,12 +625,20 @@ bool setPoint(Line* line, std::size_t index, int x, int y) noexcept;
 ///
 /// @brief Contains all declarations for quadrilaterals.
 
+/// Sets the blend mode of the quadrilateral.
+///
+/// @param quad The quadrilateral to set the blend mode of.
+/// @param mode The blend mode to assign the quadrilateral.
+///
+/// @ingroup pxQuadApi
+void setBlendMode(Quad* quad, BlendMode mode) noexcept;
+
 /// Sets the stroke color of a quadrilateral.
 ///
 /// @param quad The quadrilateral to modify the color of.
 ///
 /// @ingroup pxQuadApi
-void setColor(Quad* quad, float r, float g, float b) noexcept;
+void setColor(Quad* quad, float r, float g, float b, float a = 1) noexcept;
 
 /// Sets a point within a quadrilateral.
 ///

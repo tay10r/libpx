@@ -52,9 +52,9 @@ public:
 
     ellipse = addEllipse(getDocument(), requireCurrentLayer());
 
-    setColor(ellipse, color[0], color[1], color[2]);
-
+    setColor(ellipse, color[0], color[1], color[2], color[3]);
     setPixelSize(ellipse, getPixelSize());
+    setBlendMode(ellipse, getBlendMode());
   }
 };
 

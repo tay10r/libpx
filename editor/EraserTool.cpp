@@ -11,14 +11,14 @@ namespace px {
 
 namespace {
 
-/// Used for freestyle drawing.
-class PenTool final : public DrawTool
+/// Used for erasing contents from the image.
+class EraserTool final : public DrawTool
 {
-  /// The current line being drawn.
+  /// The line used to erase the image content.
   Line* line = nullptr;
 public:
-  /// Constructs a new pen tool instance.
-  PenTool(DrawMode* d) : DrawTool(d) {}
+  /// Constructs a new eraser tool instance.
+  EraserTool(DrawMode* d) : DrawTool(d) {}
   /// Handles mouse motion.
   /// If the left mouse button is clicked,
   /// the point passed to this function is
@@ -27,10 +27,6 @@ public:
   {
     if (line) {
       addPoint(line, x, y);
-      // Mouse dragging causes a lot of redundant
-      // points. Calling this function simplifies the
-      // line and removes the redundancies.
-      dissolvePoints(line);
     }
   }
   /// Handles a left click state change.
@@ -38,29 +34,32 @@ public:
   void leftClick(bool state) override
   {
     if (!state) {
+      // Mouse dragging causes a lot of redundant
+      // points. Calling this function simplifies the
+      // line and removes the redundancies.
+      dissolvePoints(line);
       line = nullptr;
       return;
     }
 
     snapshotDoc();
 
-    const auto* color = getPrimaryColor();
     const auto* pos = getCursor();
 
     line = addLine(getDocument(), requireCurrentLayer());
 
     setPixelSize(line, getPixelSize());
     addPoint(line, pos[0], pos[1]);
-    setColor(line, color[0], color[1], color[2], color[3]);
-    setBlendMode(line, getBlendMode());
+    setColor(line, 1.0f, 1.0f, 1.0f);
+    setBlendMode(line, BlendMode::Subtract);
   }
 };
 
 } // namespace
 
-DrawTool* createPenTool(DrawMode* d)
+DrawTool* createEraserTool(DrawMode* d)
 {
-  return new PenTool(d);
+  return new EraserTool(d);
 }
 
 } // namespace px

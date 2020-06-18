@@ -30,6 +30,11 @@ float* DrawTool::getPrimaryColor() noexcept
   return drawMode->getPrimaryColor();
 }
 
+BlendMode DrawTool::getBlendMode() const noexcept
+{
+  return drawMode->getBlendMode();
+}
+
 const float* DrawTool::getPrimaryColor() const noexcept
 {
   return drawMode->getPrimaryColor();

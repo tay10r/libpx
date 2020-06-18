@@ -22,6 +22,8 @@ add_executable(pxedit WIN32
   Editor.cpp
   EllipseTool.hpp
   EllipseTool.cpp
+  EraserTool.hpp
+  EraserTool.cpp
   ExportDialog.hpp
   ExportDialog.cpp
   Fs.hpp

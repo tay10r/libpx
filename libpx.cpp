@@ -185,68 +185,11 @@ inline constexpr Vector<T, dims> max(const Vector<T, dims>& a, const Vector<T, d
   return out;
 }
 
-/// A color type definition.
-using Color = Vector<float, 4>;
-
 /// A 2D vector type definition.
 /// Since this is usually used for
 /// spatial information, it is an
 /// integer vector.
 using Vec2 = Vector<int, 2>;
-
-/// This is the change in value of a
-/// color channel that is seen from the
-/// final result of an 8-bit per channel image.
-/// This value is primarily used to see if
-/// two colors are mostly equal.
-constexpr float colorDelta() noexcept { return 1.0f / 256.0f; }
-
-/// Indicates if two colors are almost equal.
-///
-/// @param a The first color operand.
-/// @param b The second color operand.
-/// @param bias The maximum allowable difference.
-/// This defaults to (1 / 256), which is the
-/// user perceivable difference.
-///
-/// @return True if they're almost equal, false otherwise.
-constexpr bool almostEqual(const Color& a, const Color& b, float bias = colorDelta()) noexcept
-{
-  auto diff = absolute(a - b);
-
-  return (diff[0] < bias)
-      && (diff[1] < bias)
-      && (diff[2] < bias)
-      && (diff[3] < bias);
-}
-
-/// Clips a color to be between a minimum and maximum value.
-///
-/// @param in The color to clip.
-/// @param min The minimum value to clip to.
-/// @param max The maximum value to clip to.
-constexpr Color clip(const Color& in, float min = 0, float max = 1) noexcept
-{
-  return Color {
-    std::min(std::max(min, in[0]), max),
-    std::min(std::max(min, in[1]), max),
-    std::min(std::max(min, in[2]), max),
-    std::min(std::max(min, in[3]), max)
-  };
-}
-
-/// Premultiplies the alpha channel.
-///
-/// @param c The color to premultiply the alpha channel of.
-///
-/// @return The resultant color.
-constexpr Color premultiply(const Color& c) noexcept
-{
-  return Color { c[0] * c[3],
-                 c[1] * c[3],
-                 c[2] * c[3],
-                 c[3] };
-}
 
 /// Indicates if two integer vectors are equal.
 inline bool operator == (const Vec2& a, const Vec2& b) noexcept
@@ -271,15 +214,138 @@ inline Vec2 clip(const Vec2& in, const Vec2& min, const Vec2& max) noexcept
 
 } // namespace
 
+//================//
+// Section: Color //
+//================//
+
+namespace {
+
+/// A color type definition.
+using RGBA = Vector<float, 4>;
+
+/// This is the change in value of a
+/// color channel that is seen from the
+/// final result of an 8-bit per channel image.
+/// This value is primarily used to see if
+/// two colors are mostly equal.
+constexpr float colorDelta() noexcept { return 1.0f / 256.0f; }
+
+/// Indicates if two colors are almost equal.
+///
+/// @param a The first color operand.
+/// @param b The second color operand.
+/// @param bias The maximum allowable difference.
+/// This defaults to (1 / 256), which is the
+/// user perceivable difference.
+///
+/// @return True if they're almost equal, false otherwise.
+constexpr bool almostEqual(const RGBA& a, const RGBA& b, float bias = colorDelta()) noexcept
+{
+  auto diff = absolute(a - b);
+
+  return (diff[0] < bias)
+      && (diff[1] < bias)
+      && (diff[2] < bias)
+      && (diff[3] < bias);
+}
+
+/// Clips a color to be between a minimum and maximum value.
+///
+/// @param in The color to clip.
+/// @param min The minimum value to clip to.
+/// @param max The maximum value to clip to.
+constexpr RGBA clip(const RGBA& in, float min = 0, float max = 1) noexcept
+{
+  return RGBA {
+    std::min(std::max(min, in[0]), max),
+    std::min(std::max(min, in[1]), max),
+    std::min(std::max(min, in[2]), max),
+    std::min(std::max(min, in[3]), max)
+  };
+}
+
+/// Premultiplies the alpha channel.
+///
+/// @param c The color to premultiply the alpha channel of.
+///
+/// @return The resultant color.
+constexpr RGBA premultiply(const RGBA& c) noexcept
+{
+  return RGBA { c[0] * c[3],
+                 c[1] * c[3],
+                 c[2] * c[3],
+                 c[3] };
+}
+
+/// Represents a color.
+struct Color final
+{
+  /// The original color, given from an API call.
+  RGBA original;
+  /// The premultiplied color.
+  RGBA premultiplied;
+  /// Constructs a new color instance.
+  ///
+  /// @param rgba The original color values.
+  constexpr Color(const RGBA& rgba) noexcept
+    : original(rgba), premultiplied(premultiply(rgba)) { }
+};
+
+inline constexpr RGBA normalBlend(const RGBA& bg, const Color& fg) noexcept
+{
+  return fg.premultiplied + (bg * (1.0f - fg.premultiplied[3]));
+}
+
+inline constexpr RGBA subtractionBlend(const RGBA& bg, const Color& fg) noexcept
+{
+  return clip(bg - fg.original);
+}
+
+inline constexpr RGBA blend(BlendMode mode, const RGBA& bg, const Color& fg) noexcept
+{
+  switch (mode) {
+    case BlendMode::Normal:
+      return normalBlend(bg, fg);
+    case BlendMode::Subtract:
+      return subtractionBlend(bg, fg);
+  }
+
+  return bg;
+}
+
+inline constexpr RGBA blend(BlendMode mode, const float* bg, const Color& fg) noexcept
+{
+  RGBA tmp { bg[0], bg[1], bg[2], bg[3] };
+
+  return blend(mode, tmp, fg);
+}
+
+} // namespace
+
+/// Undoes a pre-multiply operation.
+///
+/// @param c The color to restore.
+///
+/// @return The version of @p c without pre-multiplication.
+constexpr RGBA undoPremultiply(const RGBA& c) noexcept
+{
+  float rcp = 1.0f / c[3];
+
+  return RGBA { c[0] * rcp,
+                 c[1] * rcp,
+                 c[2] * rcp,
+                 c[3] };
+}
+
 //===================//
 // Section: Geometry //
 //===================//
 
 namespace {
 
-//constexpr Color white() noexcept { return Color { 1, 1, 1, 1 }; }
-constexpr Color black() noexcept { return Color { 0, 0, 0, 1 }; }
-constexpr Color transparent() noexcept { return Color { 0, 0, 0, 0 }; }
+//constexpr RGBA white() noexcept { return RGBA { 1, 1, 1, 1 }; }
+constexpr RGBA black() noexcept { return RGBA { 0, 0, 0, 1 }; }
+constexpr RGBA transparent() noexcept { return RGBA { 0, 0, 0, 0 }; }
 
 /// Used for visiting nodes in the scene graph.
 class NodeAccessor
@@ -317,8 +383,10 @@ struct StrokeNode : public Node
   /// The size of the squares that
   /// are drawn along the stroke.
   std::size_t pixelSize = 1;
+  /// The blend mode of the node.
+  BlendMode blendMode = BlendMode::Normal;
   /// The color that the stroke is drawn with.
-  Color color = black();
+  RGBA color = black();
 };
 
 /// Evaluates a number to a safe pixel size.
@@ -346,6 +414,11 @@ struct Ellipse final : public StrokeNode
   }
 };
 
+void setBlendMode(Ellipse* ellipse, BlendMode blendMode) noexcept
+{
+  ellipse->blendMode = blendMode;
+}
+
 void setCenter(Ellipse* ellipse, int x, int y) noexcept
 {
   ellipse->center = Vec2 { x, y };
@@ -356,9 +429,9 @@ void setRadius(Ellipse* ellipse, int x, int y) noexcept
   ellipse->radius = Vec2 { x, y };
 }
 
-void setColor(Ellipse* ellipse, float r, float g, float b) noexcept
+void setColor(Ellipse* ellipse, float r, float g, float b, float a) noexcept
 {
-  ellipse->color = clip(Color { r, g, b, 1 });
+  ellipse->color = clip(RGBA { r, g, b, a });
 }
 
 void setPixelSize(Ellipse* ellipse, int pixelSize) noexcept
@@ -381,8 +454,10 @@ void resizeRect(Ellipse* ellipse, int x1, int y1, int x2, int y2) noexcept
 /// Represents a flood fill operation.
 struct Fill final : public Node
 {
+  /// The blend mode of the fill operation.
+  BlendMode blendMode = BlendMode::Normal;
   /// The color to fill the area with.
-  Color color = black();
+  RGBA color = black();
   /// The position on the image to start the fill operation at.
   /// All pixels connected to this point are filled.
   Vec2 origin = Vec2 { 0, 0 };
@@ -398,14 +473,19 @@ struct Fill final : public Node
   }
 };
 
+void setBlendMode(Fill* fill, BlendMode blendMode) noexcept
+{
+  fill->blendMode = blendMode;
+}
+
 void setFillOrigin(Fill* fill, int x, int y) noexcept
 {
   fill->origin = Vec2 { x, y };
 }
 
-void setColor(Fill* fill, float r, float g, float b) noexcept
+void setColor(Fill* fill, float r, float g, float b, float a) noexcept
 {
-  fill->color = clip(Color { r, g, b, 1 });
+  fill->color = clip(RGBA { r, g, b, a });
 }
 
 /// Represents a series of straight line segments.
@@ -428,6 +508,11 @@ struct Line final : public StrokeNode
 void addPoint(Line* line, int x, int y)
 {
   line->points.emplace_back(Vec2 { x, y });
+}
+
+void setBlendMode(Line* line, BlendMode blendMode) noexcept
+{
+  line->blendMode = blendMode;
 }
 
 namespace {
@@ -482,7 +567,10 @@ void removeDuplicateSlopes(Line* line) noexcept
     auto slopeA = diffA[1] / diffA[0];
     auto slopeB = diffB[1] / diffB[0];
 
-    if (slopeA == slopeB) {
+    auto remA = diffA[1] % diffA[0];
+    auto remB = diffB[1] % diffB[0];
+
+    if ((slopeA == slopeB) && (remA == remB)) {
       line->points.erase(line->points.begin() + i);
     } else {
       i++;
@@ -535,9 +623,9 @@ void setPixelSize(Line* line, int pixelSize) noexcept
   line->pixelSize = safePixelSize(pixelSize);
 }
 
-void setColor(Line* line, float r, float g, float b) noexcept
+void setColor(Line* line, float r, float g, float b, float a) noexcept
 {
-  line->color = clip(Color { r, g, b, 1 });
+  line->color = clip(RGBA { r, g, b, a });
 }
 
 /// Represents a quadrilateral shape.
@@ -569,9 +657,14 @@ bool setPoint(Quad* quad, std::size_t index, int x, int y) noexcept
   }
 }
 
-void setColor(Quad* quad, float r, float g, float b) noexcept
+void setBlendMode(Quad* quad, BlendMode blendMode) noexcept
 {
-  quad->color = clip(Color { r, g, b, 1 });
+  quad->blendMode = blendMode;
+}
+
+void setColor(Quad* quad, float r, float g, float b, float a) noexcept
+{
+  quad->color = clip(RGBA { r, g, b, a });
 }
 
 void setPixelSize(Quad* quad, int pixelSize) noexcept
@@ -654,7 +747,7 @@ void setLayerName(Layer* layer, const char* name)
 
 void setLayerOpacity(Layer* layer, float opacity) noexcept
 {
-  layer->opacity = opacity;
+  layer->opacity = clip(opacity);
 }
 
 void setLayerVisibility(Layer* layer, bool visibility) noexcept
@@ -931,7 +1024,7 @@ public:
   ///
   /// @param name The name to give the color.
   /// @param c The color to encode.
-  void encodeColor(const char* name, const Color& c)
+  void encodeColor(const char* name, const RGBA& c)
   {
     indent() << name << ' ' << convertColor(c) << std::endl;
   }
@@ -985,10 +1078,31 @@ public:
     encodeStruct("layer", encoder);
   }
 protected:
+  /// Encodes a blend mode.
+  ///
+  /// @param name The name to give the blend mode.
+  /// Unless there's more than one blend mode, this
+  /// can just be called "blend_mode."
+  /// @param blendMode The blend mode value to encode.
+  void encodeBlendMode(const char* name, BlendMode blendMode) noexcept
+  {
+    indent() << name << ' ';
+
+    switch (blendMode) {
+      case BlendMode::Normal:
+        stream << "normal";
+        break;
+      case BlendMode::Subtract:
+        stream << "subtract";
+        break;
+    }
+
+    stream << std::endl;
+  }
   /// Converts a color into a 4 dimensional integer vector.
   ///
   /// This is required to keep the parsing simple.
-  static Vector<int, 4> convertColor(const Color& c) noexcept
+  static Vector<int, 4> convertColor(const RGBA& c) noexcept
   {
     return Vector<int, 4> {
       int(c[0] * colorRes()),
@@ -1028,6 +1142,7 @@ protected:
   {
     indent() << "pixel_size " << strokeNode.pixelSize << std::endl;
     indent() << "color " << convertColor(strokeNode.color) << std::endl;
+    encodeBlendMode("blend_mode", strokeNode.blendMode);
   }
   void access(const Ellipse& ellipse) noexcept override
   {
@@ -1044,6 +1159,7 @@ protected:
     auto encoder = [this, fill] () {
       indent() << "origin " << fill.origin << std::endl;
       indent() << "color " << convertColor(fill.color) << std::endl;
+      encodeBlendMode("blend_mode", fill.blendMode);
     };
 
     encodeStruct("fill", encoder);
@@ -1638,26 +1754,54 @@ public:
       return Optional<bool>();
     }
   }
+  /// Parses for a blend mode.
+  ///
+  /// @param name The name of the blend mode to parse.
+  ///
+  /// @return Optionally returns a blend mode.
+  Optional<BlendMode> parseBlendMode(const char* name)
+  {
+    if (!matchID(name)) {
+      return Optional<BlendMode>();
+    }
+
+    auto tok = look();
+    if (tok != TokenType::Identifier) {
+      formatError(tok) << "Expected a blend mode identifier, but got " << tok;
+      return Optional<BlendMode>();
+    }
+
+    if (tok == "normal") {
+      next();
+      return Optional<BlendMode>(BlendMode::Normal);
+    } else if (tok == "subtract") {
+      next();
+      return Optional<BlendMode>(BlendMode::Subtract);
+    } else {
+      formatError(tok) << tok << " is not a blend mode.";
+      return Optional<BlendMode>();
+    }
+  }
   /// Parses for a color value.
   ///
   /// @param name The name of the color value to parse for.
   ///
   /// @return Optionally returns a color if the correct one was found.
-  Optional<Color> parseColor(const char* name) noexcept
+  Optional<RGBA> parseColor(const char* name) noexcept
   {
     auto nameTok = look();
 
     if (!matchID(name)) {
-      return Optional<Color>();
+      return Optional<RGBA>();
     }
 
     auto v = parseVector<4>();
     if (!v.valid) {
       formatError(nameTok) << "Failed to match color values following " << nameTok;
-      return Optional<Color>();
+      return Optional<RGBA>();
     }
 
-    return Optional<Color>(toColor(v.value));
+    return Optional<RGBA>(toColor(v.value));
   }
   /// Attempts to parse a string.
   ///
@@ -1861,6 +2005,12 @@ protected:
       return true;
     }
 
+    auto blendMode = parseBlendMode("blend_mode");
+    if (blendMode.valid) {
+      node.blendMode = blendMode.value;
+      return true;
+    }
+
     auto color = parseColor("color");
     if (color.valid) {
       node.color = color.value;
@@ -1936,6 +2086,12 @@ protected:
       auto c = parseColor("color");
       if (c.valid) {
         fill.color = c.value;
+        continue;
+      }
+
+      auto b = parseBlendMode("blend_mode");
+      if (b.valid) {
+        fill.blendMode = b.value;
         continue;
       }
 
@@ -2073,9 +2229,9 @@ protected:
     }
   }
   /// Converts an integer vector to a color value.
-  Color toColor(const Vector<int, 4>& v)
+  RGBA toColor(const Vector<int, 4>& v)
   {
-    return Color {
+    return RGBA {
       float(v[0]) / colorRes(),
       float(v[1]) / colorRes(),
       float(v[2]) / colorRes(),
@@ -2238,7 +2394,7 @@ struct Document final
   /// The height of the document, in pixels.
   std::size_t height = 64;
   /// The default background color.
-  Color background = transparent();
+  RGBA background = transparent();
   /// Makes a new document.
   Document()
   {
@@ -2540,7 +2696,7 @@ void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept
 
 void setBackground(Document* doc, float r, float g, float b, float a) noexcept
 {
-  doc->background = clip(Color { r, g, b, a });
+  doc->background = clip(RGBA { r, g, b, a });
 }
 
 //============================//
@@ -2640,10 +2796,12 @@ class Painter final : public NodeAccessor
 {
   /// The current pixel size.
   std::size_t pixelSize = 1;
+  /// The blend mode of the painter.
+  BlendMode blendMode = BlendMode::Normal;
   /// The current material used to paint with.
-  Color primaryColor = Color { 0, 0, 0, 0 };
+  Color primaryColor = RGBA { 0, 0, 0, 0 };
   /// The current layer opacity.
-  float opacity = 1.0f;
+  float layerOpacity = 1.0f;
   /// The color buffer being rendered to.
   float* colorBuffer = nullptr;
   /// The width of the color buffer, in pixels.
@@ -2657,6 +2815,7 @@ public:
   {
     setPrimaryColor(ellipse.color);
 
+    blendMode = ellipse.blendMode;
     pixelSize = ellipse.pixelSize;
 
     auto functor = [this] (int x, int y) {
@@ -2677,11 +2836,13 @@ public:
       return;
     }
 
+    blendMode = fill.blendMode;
+
     auto prev = getPixel(fill.origin);
 
     setPrimaryColor(fill.color);
 
-    if (almostEqual(prev, primaryColor)) {
+    if (almostEqual(prev, primaryColor.premultiplied)) {
       return;
     }
 
@@ -2694,6 +2855,7 @@ public:
   {
     setPrimaryColor(line.color);
 
+    blendMode = line.blendMode;
     pixelSize = line.pixelSize;
 
     for (std::size_t i = 1; i < line.points.size(); i++) {
@@ -2705,6 +2867,7 @@ public:
   {
     setPrimaryColor(quad.color);
 
+    blendMode = quad.blendMode;
     pixelSize = quad.pixelSize;
 
     drawLine(quad.points[0], quad.points[1]);
@@ -2716,11 +2879,11 @@ public:
   ///
   /// @param c The color to clear the color buffer with.
   /// This is premultiplied within the function call.
-  void clear(const Color& c) noexcept
+  void clear(const RGBA& c) noexcept
   {
     unsigned max = width * height * 4;
 
-    Color bg = premultiply(c);
+    RGBA bg = premultiply(c);
 
     for (unsigned i = 0; i < max; i += 4) {
       colorBuffer[i + 0] = bg[0];
@@ -2799,7 +2962,7 @@ public:
         continue;
       }
 
-      opacity = layer->opacity;
+      layerOpacity = layer->opacity;
 
       for (const auto& node : layer->nodes) {
         node->accept(*this);
@@ -2813,18 +2976,11 @@ public:
   /// @param x The X coordinate of the pixel to set.
   /// @param y The Y coordinate of the pixel to set.
   /// @param c The color to assign the pixel.
-  inline void blend(int x, int y, const Color& c)
+  void blend(int x, int y, const Color& c) noexcept
   {
     auto* dst = &colorBuffer[((y * width) + x) * 4];
 
-    Color bg {
-      dst[0],
-      dst[1],
-      dst[2],
-      dst[3]
-    };
-
-    auto result = c + (bg * (1.0f - c[3]));
+    auto result = px::blend(blendMode, dst, c);
 
     dst[0] = result[0];
     dst[1] = result[1];
@@ -2837,7 +2993,7 @@ public:
   ///
   /// @param p The position of the pixel to set.
   /// @param c The color to assign the pixel.
-  inline void blend(const Vec2& p, const Color& c)
+  inline void blend(const Vec2& p, const RGBA& c)
   {
     return blend(p[0], p[1], c);
   }
@@ -2848,9 +3004,9 @@ public:
   /// @param c The color to assign to the painter.
   /// The alpha channel is ignored and the current
   /// layer opacity is used in place of it.
-  inline void setPrimaryColor(const Color& c)
+  inline void setPrimaryColor(const RGBA& c)
   {
-    primaryColor = premultiply(Color { c[0], c[1], c[2], opacity });
+    primaryColor = Color(RGBA { c[0], c[1], c[2], layerOpacity * c[3] });
   }
   /// Gets the color from a pixel at a certain point.
   ///
@@ -2859,7 +3015,7 @@ public:
   /// @param p The point to get the pixel color from.
   ///
   /// @return The color at the specified point.
-  inline Color getPixel(const Vec2& p) const noexcept
+  inline RGBA getPixel(const Vec2& p) const noexcept
   {
     return getPixel(p[0], p[1]);
   }
@@ -2871,11 +3027,11 @@ public:
   /// @param y The Y coordinate of the pixel to get.
   ///
   /// @return The color at the specified point.
-  inline Color getPixel(int x, int y) const noexcept
+  inline RGBA getPixel(int x, int y) const noexcept
   {
     const float* src = &colorBuffer[((y * width) + x) * 4];
 
-    return Color { src[0], src[1], src[2], src[3] };
+    return RGBA { src[0], src[1], src[2], src[3] };
   }
   /// Indicates if a point is in bounds or not.
   ///
@@ -2894,7 +3050,7 @@ protected:
   /// @param origin The point to start at.
   ///
   /// @param prev The previous color.
-  void fill(const Vec2& origin, const Color& prev)
+  void fill(const Vec2& origin, const RGBA& prev)
   {
     if (!inBounds(origin)) {
       return;

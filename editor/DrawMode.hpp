@@ -3,6 +3,8 @@
 
 #include "Mode.hpp"
 
+#include <libpx.hpp>
+
 #include <cstddef>
 
 namespace px {
@@ -20,6 +22,8 @@ public:
 
   virtual Editor* getEditor() noexcept = 0;
   virtual const Editor* getEditor() const noexcept = 0;
+
+  virtual BlendMode getBlendMode() const noexcept = 0;
 
   virtual int getPixelSize() const noexcept = 0;
 

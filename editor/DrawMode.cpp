@@ -6,6 +6,7 @@
 #include "BucketTool.hpp"
 #include "ColorPickerTool.hpp"
 #include "EllipseTool.hpp"
+#include "EraserTool.hpp"
 #include "PenTool.hpp"
 #include "RectTool.hpp"
 #include "StrokeTool.hpp"
@@ -23,6 +24,24 @@
 namespace px {
 
 namespace {
+
+/// Used for mapping blend modes to integers,
+/// enum values, and strings.
+struct BlendModeMap final
+{
+  /// Converts a blend mode to a human-readable string.
+  static constexpr const char* asString(BlendMode mode) noexcept
+  {
+    switch (mode) {
+      case BlendMode::Normal:
+        return "Normal";
+      case BlendMode::Subtract:
+        return "Subtract";
+    }
+
+    return "Normal";
+  }
+};
 
 /// Contains state information on a layer.
 struct LayerState final
@@ -49,9 +68,11 @@ class DrawModeImpl final : public DrawMode
   /// Whether or not the document size is locked.
   bool sizeLock = true;
   /// The current primary color.
-  float primaryColor[3] { 0, 0, 0 };
+  float primaryColor[4] { 0, 0, 0, 1 };
   /// The current pixel size.
   int pixelSize = 1;
+  /// The current blend mode.
+  BlendMode blendMode = BlendMode::Normal;
   /// The last known cursor position.
   int cursor[2] { 0, 0 };
   /// The user interface states of each layer.
@@ -115,6 +136,8 @@ public:
   {
     return editor->getDocument();
   }
+  /// Gets the current blend mode.
+  BlendMode getBlendMode() const noexcept override { return blendMode; }
   /// Gets the current primary color.
   float* getPrimaryColor() noexcept override { return primaryColor; }
   /// Gets the current primary color.
@@ -147,6 +170,7 @@ protected:
       auto hit = false;
 
       hit |= ImGui::RadioButton(         "Pen", &toolIndex, 0);
+      hit |= ImGui::RadioButton(      "Eraser", &toolIndex, 6);
       hit |= ImGui::RadioButton(      "Stroke", &toolIndex, 1);
       hit |= ImGui::RadioButton(      "Bucket", &toolIndex, 2);
       hit |= ImGui::RadioButton(   "Rectangle", &toolIndex, 3);
@@ -173,18 +197,35 @@ protected:
           case 5:
             currentTool.reset(createColorPickerTool(this));
             break;
+          case 6:
+            currentTool.reset(createEraserTool(this));
+            break;
         }
       }
     }
 
     if (ImGui::CollapsingHeader("Tool Properties", false)) {
+
       if (currentTool) {
         currentTool->renderProperties();
       }
 
       ImGui::InputInt("Pixel Size", &pixelSize);
 
-      ImGui::ColorEdit3("Primary Color", primaryColor);
+      ImGui::ColorEdit4("Primary Color", primaryColor);
+
+      if (ImGui::BeginCombo("Blend Mode", BlendModeMap::asString(blendMode))) {
+
+        if (ImGui::Selectable("Normal")) {
+          blendMode = BlendMode::Normal;
+        }
+
+        if (ImGui::Selectable("Subtract")) {
+          blendMode = BlendMode::Subtract;
+        }
+
+        ImGui::EndCombo();
+      }
     }
 
     if (ImGui::CollapsingHeader("Document Properties", false)) {

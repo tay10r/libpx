@@ -3,6 +3,8 @@
 
 #include <cstddef>
 
+#include <libpx.hpp>
+
 namespace px {
 
 class Document;
@@ -49,6 +51,8 @@ protected:
   const Document* getDocument() const noexcept;
   /// Gets a pointer to the last rendered image.
   const Image* getImage() const noexcept;
+  /// Gets the current blend mode.
+  BlendMode getBlendMode() const noexcept;
   /// Gets a pointer to the primary color.
   float* getPrimaryColor() noexcept;
   /// Gets a pointer to the primary color.
