@@ -322,21 +322,6 @@ inline constexpr RGBA blend(BlendMode mode, const float* bg, const Color& fg) no
 
 } // namespace
 
-/// Undoes a pre-multiply operation.
-///
-/// @param c The color to restore.
-///
-/// @return The version of @p c without pre-multiplication.
-constexpr RGBA undoPremultiply(const RGBA& c) noexcept
-{
-  float rcp = 1.0f / c[3];
-
-  return RGBA { c[0] * rcp,
-                 c[1] * rcp,
-                 c[2] * rcp,
-                 c[3] };
-}
-
 //===================//
 // Section: Geometry //
 //===================//
