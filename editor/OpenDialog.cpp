@@ -23,7 +23,9 @@ public:
   bool render(Editor* editor) override
   {
     if (checkFileSelect()) {
-      editor->openDoc(docPath.c_str());
+      if (!docPath.empty()) {
+        editor->openDoc(docPath.c_str());
+      }
       return false;
     } else {
       return true;
