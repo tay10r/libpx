@@ -17,6 +17,7 @@
 #include <libpx.hpp>
 
 #include <memory>
+#include <string>
 
 #include <cstdio>
 #include <cstdlib>
