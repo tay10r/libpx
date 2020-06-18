@@ -554,7 +554,7 @@ void Editor::renderUi()
     // to fire up the unsaved changes dialog.
 
     if (shouldExit() && !canSafelyExit()) {
-      createSaveDialog();
+      impl->startSaveDialog();
     }
   }
 
