@@ -498,6 +498,8 @@ struct Layer final
   float opacity = 1;
   /// The name given to this layer.
   std::string name;
+  /// Whether or not the layer is visible.
+  bool visible = true;
   /// The nodes for this layer
   std::vector<NodePtr> nodes;
   /// Just a stub.
@@ -507,6 +509,8 @@ struct Layer final
   {
     opacity = other.opacity;
     name = other.name;
+    visible = other.visible;
+
     for (const auto& otherNode : other.nodes) {
       nodes.emplace_back(otherNode->copy());
     }
@@ -543,6 +547,11 @@ float getLayerOpacity(const Layer* layer) noexcept
   return layer->opacity;
 }
 
+bool getLayerVisibility(const Layer* layer) noexcept
+{
+  return layer->visible;
+}
+
 void setLayerName(Layer* layer, const char* name)
 {
   layer->name = name ? name : "";
@@ -551,6 +560,11 @@ void setLayerName(Layer* layer, const char* name)
 void setLayerOpacity(Layer* layer, float opacity) noexcept
 {
   layer->opacity = opacity;
+}
+
+void setLayerVisibility(Layer* layer, bool visibility) noexcept
+{
+  layer->visible = visibility;
 }
 
 //================//
@@ -834,6 +848,14 @@ public:
   {
     indent() << name << ' ' << value << std::endl;
   }
+  /// Encodes a boolean value.
+  ///
+  /// @param name The name of the value to encode.
+  /// @parma value The value to encode.
+  void encodeBool(const char* name, bool value)
+  {
+    indent() << name << ' ' << (value ? "true" : "false") << std::endl;
+  }
   /// Encodes a string onto the document.
   ///
   /// @param name The name to give the string field.
@@ -859,6 +881,7 @@ public:
     auto encoder = [this, &layer]() {
       encodeString("name", layer.name.c_str());
       encodeColorChannel("opacity", layer.opacity);
+      encodeBool("visible", layer.visible);
       for (const auto& node : layer.nodes) {
         node->accept(*this);
       }
@@ -970,6 +993,8 @@ enum class TokenType
   None,
   /// A single line comment beginning with '#'
   Comment,
+  /// A boolean 'false' value.
+  False,
   /// A C-style identifier (a-zA-Z_)
   Identifier,
   /// An integer (with optional leading '-')
@@ -978,6 +1003,8 @@ enum class TokenType
   Space,
   /// A double quoted string value.
   StringLiteral,
+  /// A boolean 'true' value.
+  True,
   /// An invalid character
   Invalid
 };
@@ -1062,6 +1089,11 @@ public:
       return t;
     }
 
+    t = booleanLiteral();
+    if (t) {
+      return t;
+    }
+
     t = identifier();
     if (t) {
       return t;
@@ -1107,6 +1139,28 @@ protected:
       return Token();
     }
   }
+  /// Parses for a boolean literal.
+  Token booleanLiteral() noexcept
+  {
+    if (isEqual(0, 't')
+     && isEqual(1, 'r')
+     && isEqual(2, 'u')
+     && isEqual(3, 'e')
+     && !isIdentifierChar(4)) {
+      return makeToken(TokenType::True, 4);
+    }
+
+    if (isEqual(0, 'f')
+     && isEqual(1, 'a')
+     && isEqual(2, 'l')
+     && isEqual(3, 's')
+     && isEqual(4, 'e')
+     && !isIdentifierChar(5)) {
+      return makeToken(TokenType::False, 5);
+    }
+
+    return Token();
+  }
   /// Scans for a comment token.
   Token comment() noexcept
   {
@@ -1138,10 +1192,7 @@ protected:
     }
 
     while (inBounds(match)) {
-      if (isInRange(match, 'a', 'z')
-       || isInRange(match, 'A', 'Z')
-       || isInRange(match, '0', '9')
-       || isEqual(match, '_')) {
+      if (isIdentifierChar(match)) {
         match++;
       } else {
         break;
@@ -1249,6 +1300,23 @@ protected:
     next(s);
 
     return token;
+  }
+  /// Checks if a character can be part of an identifier.
+  //
+  /// @note This does not take into account that a decimal digit
+  /// is not allowed in the first character of an identifier.
+  ///
+  /// @param offset The offset of the character to check.
+  ///
+  /// @return True if the character is an identifier character, false if it's not.
+  inline constexpr bool isIdentifierChar(std::size_t offset) const noexcept
+  {
+    auto c = look(offset);
+
+    return (((c >= 'a') && (c <= 'z'))
+         || ((c >= 'A') && (c <= 'Z'))
+         || ((c >= '0') && (c <= '9'))
+         || (c == '_'));
   }
   /// Indicates if a character is equal to another.
   inline constexpr bool isEqual(std::size_t offset, char c) const noexcept
@@ -1402,6 +1470,12 @@ public:
         continue;
       }
 
+      auto visibility = parseBool("visible");
+      if (visibility.valid) {
+        layer->visible = visibility.value;
+        continue;
+      }
+
       auto node = parseNode();
       if (node) {
         layer->nodes.emplace_back(std::move(node));
@@ -1445,6 +1519,29 @@ public:
     }
 
     return NodePtr();
+  }
+  /// Attempts to make a boolean value.
+  ///
+  /// @param name The name of the value to parse.
+  ///
+  /// @return Optionally returns a boolean value.
+  Optional<bool> parseBool(const char* name)
+  {
+    if (!matchID(name)) {
+      return Optional<bool>();
+    }
+
+    auto tok = look();
+    if (tok == TokenType::True) {
+      next();
+      return Optional<bool>(true);
+    } else if (tok == TokenType::False) {
+      next();
+      return Optional<bool>(false);
+    } else {
+      formatError(tok) << "Expected a boolean value, but got " << tok;
+      return Optional<bool>();
+    }
   }
   /// Parses for a color value.
   ///
@@ -1490,21 +1587,21 @@ public:
   /// @param name The name of the color channel value.
   ///
   /// @return Optionally returns a color channel value.
-  Optional<int> parseColorChannel(const char* name) noexcept
+  Optional<float> parseColorChannel(const char* name) noexcept
   {
     auto nameTok = look();
 
     if (!matchID(name)) {
-      return Optional<int>();
+      return Optional<float>();
     }
 
     auto i = parseInt();
     if (!i.valid) {
       formatError(nameTok) << "Failed to match color channel value following " << nameTok;
-      return Optional<int>();
+      return Optional<float>();
     }
 
-    return i;
+    return Optional<float>(float(i.value) / colorRes());
   }
   /// Parses for a string literal.
   Optional<std::string> parseString()
@@ -2718,6 +2815,11 @@ void render(const Document* doc, float* colorBuffer, std::size_t w, std::size_t 
   painter.clear(doc->background);
 
   for (const auto& layer : doc->layers) {
+
+    if (!layer->visible) {
+      continue;
+    }
+
     for (const auto& node : layer->nodes) {
       node->accept(painter);
     }

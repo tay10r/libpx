@@ -385,6 +385,15 @@ const char* getLayerName(const Layer* layer) noexcept;
 /// @ingroup pxLayerApi
 float getLayerOpacity(const Layer* layer) noexcept;
 
+/// Gets the visibility state of the layer.
+///
+/// @param layer The layer to get the visibility state of.
+///
+/// @return True if the layer is visible, false if it's not.
+///
+/// @ingroup pxLayerApi
+bool getLayerVisibility(const Layer* layer) noexcept;
+
 /// Sets the opacity of the layer.
 ///
 /// @param layer The layer to set the opacity of.
@@ -394,6 +403,15 @@ float getLayerOpacity(const Layer* layer) noexcept;
 ///
 /// @ingroup pxLayerApi
 void setLayerOpacity(Layer* layer, float opacity) noexcept;
+
+/// Sets the layer visibility state.
+///
+/// @param layer The layer to set the visibility of.
+///
+/// @param visibility True if the layer should be visible, false if it should not.
+///
+/// @ingroup pxLayerApi
+void setLayerVisibility(Layer* layer, bool visibility) noexcept;
 
 /// @defgroup pxEllipseApi Ellipse API
 ///

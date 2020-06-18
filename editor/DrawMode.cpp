@@ -31,6 +31,8 @@ struct LayerState final
   bool selected = false;
   /// Wether or not the layer is getting edited.
   bool editing = false;
+  /// Whether or not the user is currently modifying the opacity.
+  bool opacityChanging = false;
   /// The input buffer for renaming layers (TODO : std::string)
   char renameBuffer[4096] {};
 };
@@ -130,6 +132,8 @@ public:
       addLayer();
     }
 
+    layerStates[0].selected = true;
+
     return 0;
   }
 protected:
@@ -227,7 +231,51 @@ protected:
       removeSelectedLayers();
     }
 
+
+    renderCurrentLayerProperties();
+
     ImGui::End();
+  }
+  /// Renders the properties of the current layer.
+  void renderCurrentLayerProperties()
+  {
+    std::size_t currentLayer = 0;
+
+    if (!getCurrentLayerIndex(currentLayer)) {
+      return;
+    }
+
+    auto* layer = getLayer(currentLayer);
+
+    float opacity = getLayerOpacity(layer);
+
+    if (ImGui::SliderFloat("Opacity", &opacity, 0, 1)) {
+
+      // We only snapshot the document when the user
+      // begins changing the opacity.
+      if (!layerStates[currentLayer].opacityChanging) {
+        editor->snapshotDoc();
+        layer = getLayer(currentLayer);
+      }
+
+      layerStates[currentLayer].opacityChanging = true;
+
+      setLayerOpacity(layer, opacity);
+
+    } else {
+      layerStates[currentLayer].opacityChanging = false;
+    }
+
+    bool visibleState = getLayerVisibility(layer);
+
+    if (ImGui::Checkbox("Visible", &visibleState)) {
+
+      editor->snapshotDoc();
+
+      layer = getLayer(currentLayer);
+
+      setLayerVisibility(layer, visibleState);
+    }
   }
   /// Renders the list of layers.
   void renderLayerList()
@@ -385,6 +433,23 @@ protected:
     }
 
     updateLayerStates();
+  }
+  /// Gets the index of the current layer.
+  ///
+  /// @param index This variable receives the index.
+  ///
+  /// @return True on success, false if there's
+  /// no layer currently selected.
+  bool getCurrentLayerIndex(std::size_t& index)
+  {
+    for (std::size_t i = 0; i < layerStates.size(); i++) {
+      if (layerStates[i].selected) {
+        index = i;
+        return true;
+      }
+    }
+
+    return false;
   }
   /// Gets a pointer to a layer.
   inline Layer* getLayer(std::size_t index)
