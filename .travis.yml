@@ -9,7 +9,7 @@ compiler:
   - gcc
 
 install:
-  - sudo apt-get -y install freeglut3-dev libglew-dev libxrandr-dev libxinerama-dev libxcursor-dev
+  - sudo apt-get -y install freeglut3-dev libglew-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 
 script:
   - mkdir build && cd build
