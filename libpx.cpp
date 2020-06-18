@@ -2527,15 +2527,19 @@ Document* copyDoc(const Document* doc)
   return new Document(*doc);
 }
 
-bool openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
+int openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
 {
+  if (errListPtr) {
+    *errListPtr = nullptr;
+  }
+
   if (!filename) {
-    return false;
+    return EFAULT;
   }
 
   std::ifstream file(filename);
   if (!file.good()) {
-    return false;
+    return errno;
   }
 
   std::stringstream buf;
@@ -2601,10 +2605,10 @@ bool openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
       *errListPtr = parser.getErrorList(filename, std::move(content));
     }
 
-    return false;
+    return EINVAL;
   }
 
-  return true;
+  return 0;
 }
 
 bool saveDoc(const Document* doc, const char* filename)

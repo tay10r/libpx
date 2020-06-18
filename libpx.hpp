@@ -173,12 +173,21 @@ Document* createDoc();
 /// Imports data from an external document.
 ///
 /// @param doc A pointer to a document returned from @ref createDoc
-/// @param filename The path to the file to import the data from.
-/// @param errList An optional parameter to store the error list at.
-/// See @ref pxErrorListApi for more information.
 ///
-/// @return True on success, false on failure.
-bool openDoc(Document* doc, const char* filename, ErrorList** errList = nullptr);
+/// @param filename The path to the file to import the data from.
+///
+/// @param errList An optional parameter to store the error list at.
+/// See @ref pxErrorListApi for more information. If a pointer is passed
+/// to this parameter, then it is set to null until there are actual parser
+/// errors to assign. Therefore, the pointer passed to this function may
+/// still be null depending on whether or not syntax errors were found.
+///
+/// @return If the document was opened properly, then zero is returned.
+/// On error, the value of errno is returned. If the document failed to
+/// open because of a syntax error, then EINVAL is returned. In either case,
+/// @p errList is only created if there's syntax erros. So users should null-check
+/// the pointer before calling any of the functions in @ref pxErrorApi
+int openDoc(Document* doc, const char* filename, ErrorList** errList = nullptr);
 
 /// Saves a document to a file.
 ///
