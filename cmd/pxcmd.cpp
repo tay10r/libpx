@@ -25,9 +25,14 @@ bool process(const char* filename)
 
   px::ErrorList* errList = nullptr;
 
-  if (!px::openDoc(doc, filename, &errList)) {
-    px::printErrorListToStderr(errList);
-    px::closeErrorList(errList);
+  int err = px::openDoc(doc, filename, &errList);
+  if (err != 0) {
+    if (errList) {
+      px::printErrorListToStderr(errList);
+      px::closeErrorList(errList);
+    } else {
+      std::fprintf(stderr, "Failed to open '%s' (%s)\n", filename, std::strerror(err));
+    }
     px::closeDoc(doc);
     return false;
   }

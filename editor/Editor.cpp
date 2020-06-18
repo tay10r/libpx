@@ -300,10 +300,12 @@ bool Editor::openDoc(const char* path)
 
   ErrorList* errList = nullptr;
 
-  auto success = px::openDoc(doc, path, &errList);
-  if (!success) {
-    printErrorListToStderr(errList);
-    closeErrorList(errList);
+  int err = px::openDoc(doc, path, &errList);
+  if (err != 0) {
+    if (errList) {
+      printErrorListToStderr(errList);
+      closeErrorList(errList);
+    }
     return false;
   }
 
