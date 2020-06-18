@@ -856,6 +856,10 @@ void closeErrorList(ErrorList* errList) noexcept
 
 void printErrorListToStderr(const ErrorList* errList) noexcept
 {
+  if (!errList) {
+    return;
+  }
+
   for (std::size_t i = 0; i < errList->errors.size(); i++) {
     printErrorToStderr(errList, i);
   }
@@ -863,6 +867,10 @@ void printErrorListToStderr(const ErrorList* errList) noexcept
 
 void printErrorToStderr(const ErrorList* errList, std::size_t index) noexcept
 {
+  if (!errList) {
+    return;
+  }
+
   if (index >= errList->errors.size()) {
     return;
   }
@@ -872,21 +880,37 @@ void printErrorToStderr(const ErrorList* errList, std::size_t index) noexcept
 
 const char* getErrorSource(const ErrorList* errList) noexcept
 {
+  if (!errList) {
+    return "";
+  }
+
   return errList->source.c_str();
 }
 
 std::size_t getErrorSourceSize(const ErrorList* errList) noexcept
 {
+  if (!errList) {
+    return 0;
+  }
+
   return errList->source.size();
 }
 
 std::size_t getErrorCount(const ErrorList* errList) noexcept
 {
+  if (!errList) {
+    return 0;
+  }
+
   return errList->errors.size();
 }
 
 std::size_t getErrorColumn(const ErrorList* errList, std::size_t error) noexcept
 {
+  if (!errList) {
+    return 0;
+  }
+
   if (error >= errList->errors.size()) {
     return 0;
   }
@@ -896,6 +920,10 @@ std::size_t getErrorColumn(const ErrorList* errList, std::size_t error) noexcept
 
 std::size_t getErrorLine(const ErrorList* errList, std::size_t error) noexcept
 {
+  if (!errList) {
+    return 0;
+  }
+
   if (error >= errList->errors.size()) {
     return 0;
   }
@@ -905,6 +933,10 @@ std::size_t getErrorLine(const ErrorList* errList, std::size_t error) noexcept
 
 std::size_t getErrorPosition(const ErrorList* errList, std::size_t error) noexcept
 {
+  if (!errList) {
+    return 0;
+  }
+
   if (error >= errList->errors.size()) {
     return 0;
   }
@@ -914,6 +946,10 @@ std::size_t getErrorPosition(const ErrorList* errList, std::size_t error) noexce
 
 std::size_t getErrorSize(const ErrorList* errList, std::size_t error) noexcept
 {
+  if (!errList) {
+    return 0;
+  }
+
   if (error >= errList->errors.size()) {
     return 0;
   }
@@ -923,6 +959,10 @@ std::size_t getErrorSize(const ErrorList* errList, std::size_t error) noexcept
 
 const char* getErrorDescription(const ErrorList* errList, std::size_t error) noexcept
 {
+  if (!errList) {
+    return "";
+  }
+
   if (error >= errList->errors.size()) {
     return 0;
   }
