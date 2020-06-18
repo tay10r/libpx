@@ -3,17 +3,13 @@
 
 namespace px {
 
-struct DrawState;
-
 class DrawTool;
-class Editor;
+class DrawMode;
 
 /// Creates a new instance of the rectangle tool.
 ///
-/// @param editor A pointer to the editor that the tool is for.
-///
 /// @return a new rectangle tool instance.
-DrawTool* createRectTool(Editor* editor, const DrawState& ds);
+DrawTool* createRectTool(DrawMode* d);
 
 } // namespace px
 

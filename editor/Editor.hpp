@@ -36,7 +36,7 @@ public:
   bool openDoc(const char* filename);
   /// Saves the document.
   ///
-  /// @param path The path to save the file at.
+  /// @param filename The path to save the file at.
   ///
   /// @return True on success, false on failure.
   bool saveDoc(const char* filename);

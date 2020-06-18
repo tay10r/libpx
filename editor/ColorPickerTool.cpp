@@ -15,9 +15,7 @@ class ColorPickerTool final : public DrawTool
 {
 public:
   /// Constructs a new color picker tool instance.
-  ///
-  /// @param e A pointer to the editor instance.
-  ColorPickerTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
+  ColorPickerTool(DrawMode* d) : DrawTool(d) {}
   /// Gets the color on the image at the current cursor location.
   void leftClick(bool state) override
   {
@@ -42,9 +40,9 @@ public:
 
 } // namespace
 
-DrawTool* createColorPickerTool(Editor* editor, const DrawState& ds)
+DrawTool* createColorPickerTool(DrawMode* d)
 {
-  return new ColorPickerTool(editor, ds);
+  return new ColorPickerTool(d);
 }
 
 } // namespace px

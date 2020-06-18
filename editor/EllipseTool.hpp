@@ -3,18 +3,13 @@
 
 namespace px {
 
-struct DrawState;
-
 class DrawTool;
-class Editor;
+class DrawMode;
 
 /// Creates a new instance of the ellipse tool.
 ///
-/// @param editor A pointer to the editor that
-/// the tool is being created for.
-///
 /// @return A new ellipse tool instance.
-DrawTool* createEllipseTool(Editor* editor, const DrawState& ds);
+DrawTool* createEllipseTool(DrawMode* d);
 
 } // namespace px
 

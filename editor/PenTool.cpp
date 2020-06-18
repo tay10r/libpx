@@ -1,7 +1,7 @@
 #include "PenTool.hpp"
 
 #include "DrawTool.hpp"
-#include "Editor.hpp"
+#include "DrawMode.hpp"
 
 #include <libpx.hpp>
 
@@ -20,7 +20,7 @@ public:
   /// Constructs a new pen tool instance.
   ///
   /// @param e A pointer to the editor instance.
-  PenTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
+  PenTool(DrawMode* d) : DrawTool(d) {}
   /// Handles mouse motion.
   /// If the left mouse button is clicked,
   /// the point passed to this function is
@@ -45,7 +45,7 @@ public:
     const auto* color = getPrimaryColor();
     const auto* pos = getCursor();
 
-    line = addLine(getDocument());
+    line = addLine(getDocument(), requireCurrentLayer());
 
     setPixelSize(line, getPixelSize());
     addPoint(line, pos[0], pos[1]);
@@ -55,9 +55,9 @@ public:
 
 } // namespace
 
-DrawTool* createPenTool(Editor* editor, const DrawState& ds)
+DrawTool* createPenTool(DrawMode* d)
 {
-  return new PenTool(editor, ds);
+  return new PenTool(d);
 }
 
 } // namespace px

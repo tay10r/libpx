@@ -21,9 +21,7 @@ class RectTool final : public DrawTool
   Quad* rect = nullptr;
 public:
   /// Constructs a new instance of the stroke tool.
-  ///
-  /// @param e A pointer to the editor instance that the tool is for.
-  RectTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
+  RectTool(DrawMode* d) : DrawTool(d) {}
   /// Handles mouse movement.
   void mouseMotion(unsigned x, unsigned y) override
   {
@@ -56,7 +54,7 @@ public:
     const auto* pos = getCursor();
     const auto* color = getPrimaryColor();
 
-    rect = addQuad(getDocument());
+    rect = addQuad(getDocument(), requireCurrentLayer());
 
     setPoint(rect, 0, pos[0], pos[1]);
     setPixelSize(rect, getPixelSize());
@@ -69,9 +67,9 @@ public:
 
 } // namespace
 
-DrawTool* createRectTool(Editor* e, const DrawState& ds)
+DrawTool* createRectTool(DrawMode* d)
 {
-  return new RectTool(e, ds);
+  return new RectTool(d);
 }
 
 } // namespace px

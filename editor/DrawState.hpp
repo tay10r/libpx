@@ -1,19 +1,26 @@
 #ifndef LIBPX_EDITOR_DRAW_STATE_HPP
 #define LIBPX_EDITOR_DRAW_STATE_HPP
 
+#include <cstddef>
+
 namespace px {
 
-/// Contains state data that is common
-/// to and shared by many tools.
-struct DrawState final
+/// An interface to the state data in draw mode.
+class DrawState
 {
-  /// A pointer to the primary color.
-  float* primaryColor = nullptr;
-  /// A pointer to the current pixel size.
-  int* pixelSize = nullptr;
-  /// A pointer to the last known cursor
-  /// position on the document image.
-  int* cursor = nullptr;
+public:
+  /// Just a stub.
+  virtual ~DrawState() {}
+  /// Gets the current pixel size.
+  virtual int getPixelSize() const noexcept = 0;
+  /// Gets the current cursor position.
+  virtual const int* getCursor() const noexcept = 0;
+  /// Gets the current primary color.
+  virtual const float* getPrimaryColor() const noexcept = 0;
+  /// Requires an index of the current layer.
+  /// This will create a layer if there are presently
+  /// none in the document.
+  virtual std::size_t requireCurrentLayer() = 0;
 };
 
 } // namespace px

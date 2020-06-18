@@ -1,13 +1,12 @@
 #ifndef LIBPX_EDITOR_DRAW_TOOL_HPP
 #define LIBPX_EDITOR_DRAW_TOOL_HPP
 
-#include "DrawState.hpp"
+#include <cstddef>
 
 namespace px {
 
-struct DrawState;
-
 class Document;
+class DrawMode;
 class Editor;
 class Image;
 
@@ -15,15 +14,14 @@ class Image;
 /// in the editor in draw mode.
 class DrawTool
 {
-  /// A pointer to the editor using the tool.
-  Editor* editor = nullptr;
-  /// The draw state passed to the constructor.
-  DrawState drawState;
+  /// A pointer to the draw mode.
+  DrawMode* drawMode = nullptr;
 public:
   /// Constructs a new tool instance.
   ///
-  /// @param e A pointer to the editor instance.
-  DrawTool(Editor* e, const DrawState& ds) : editor(e), drawState(ds) {}
+  /// @param d A pointer to the draw mode
+  /// instance that's hosting the tool.
+  DrawTool(DrawMode* d) : drawMode(d) {}
   /// Just a stub.
   virtual ~DrawTool() {}
   /// Handles mouse motion.
@@ -51,22 +49,16 @@ protected:
   const Document* getDocument() const noexcept;
   /// Gets a pointer to the last rendered image.
   const Image* getImage() const noexcept;
-  /// Gets a reference to the draw state.
-  inline const DrawState& getDrawState() const noexcept { return drawState; }
-  /// Gets a reference to the draw state.
-  inline DrawState& getDrawState() noexcept { return drawState; }
   /// Gets a pointer to the primary color.
-  inline float* getPrimaryColor() const noexcept {
-    return drawState.primaryColor;
-  }
+  float* getPrimaryColor() noexcept;
+  /// Gets a pointer to the primary color.
+  const float* getPrimaryColor() const noexcept;
   /// Gets a pointer to the cursor position.
-  inline int* getCursor() const noexcept {
-    return drawState.cursor;
-  }
+  const int* getCursor() const noexcept;
   /// Gets the current pixel size.
-  inline int getPixelSize() const noexcept {
-    return *drawState.pixelSize;
-  }
+  int getPixelSize() const noexcept;
+  /// Gets the index of the current layer.
+  std::size_t requireCurrentLayer();
 };
 
 } // namespace px

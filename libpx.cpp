@@ -29,6 +29,14 @@ inline constexpr T absolute(T in) noexcept
   return in < 0 ? -in : in;
 }
 
+/// Clips a scalar value to be in an inclusive interval
+/// of a certain min and maximum.
+template <typename T>
+inline constexpr T clip(T in, T min = 0, T max = 1) noexcept
+{
+  return std::max(min, std::min(in, max));
+}
+
 //======================//
 // Section: Vector Math //
 //======================//
@@ -256,7 +264,7 @@ inline Vec2 clip(const Vec2& in, const Vec2& min, const Vec2& max) noexcept
 
 namespace {
 
-constexpr Color white() noexcept { return Color { 1, 1, 1, 1 }; }
+//constexpr Color white() noexcept { return Color { 1, 1, 1, 1 }; }
 constexpr Color black() noexcept { return Color { 0, 0, 0, 1 }; }
 constexpr Color transparent() noexcept { return Color { 0, 0, 0, 0 }; }
 
@@ -337,7 +345,7 @@ void setRadius(Ellipse* ellipse, int x, int y) noexcept
 
 void setColor(Ellipse* ellipse, float r, float g, float b) noexcept
 {
-  ellipse->color = Color { r, g, b, 1 };
+  ellipse->color = clip(Color { r, g, b, 1 });
 }
 
 void setPixelSize(Ellipse* ellipse, int pixelSize) noexcept
@@ -384,7 +392,7 @@ void setFillOrigin(Fill* fill, int x, int y) noexcept
 
 void setColor(Fill* fill, float r, float g, float b) noexcept
 {
-  fill->color = Color { r, g, b, 1 };
+  fill->color = clip(Color { r, g, b, 1 });
 }
 
 /// Represents a series of straight line segments.
@@ -434,7 +442,7 @@ void setPixelSize(Line* line, int pixelSize) noexcept
 
 void setColor(Line* line, float r, float g, float b) noexcept
 {
-  line->color = Color { r, g, b, 1 };
+  line->color = clip(Color { r, g, b, 1 });
 }
 
 /// Represents a quadrilateral shape.
@@ -468,12 +476,81 @@ bool setPoint(Quad* quad, std::size_t index, int x, int y) noexcept
 
 void setColor(Quad* quad, float r, float g, float b) noexcept
 {
-  quad->color = Color { r, g, b, 1 };
+  quad->color = clip(Color { r, g, b, 1 });
 }
 
 void setPixelSize(Quad* quad, int pixelSize) noexcept
 {
   quad->pixelSize = safePixelSize(pixelSize);
+}
+
+//=================//
+// Section: Layers //
+//=================//
+
+/// A layer here is what it is in most image
+/// editing applications, a collection of 2D data
+/// that is meant for a certain Z index and opacity,
+/// to be drawn in a certain order relative to the other layers.
+struct Layer final
+{
+  /// The alpha channel value of this layer.
+  float opacity = 1;
+  /// The name given to this layer.
+  std::string name;
+  /// The nodes for this layer
+  std::vector<NodePtr> nodes;
+  /// Just a stub.
+  Layer() {}
+  /// Copies a layer.
+  Layer(const Layer& other)
+  {
+    opacity = other.opacity;
+    name = other.name;
+    for (const auto& otherNode : other.nodes) {
+      nodes.emplace_back(otherNode->copy());
+    }
+  }
+  /// Adds a node to the layer.
+  ///
+  /// @tparam NodeType The type of the node to add.
+  ///
+  /// @param node The node to add to the layer.
+  ///
+  /// @return A pointer to to @p node.
+  template <typename NodeType>
+  NodeType* addNode(NodeType* node)
+  {
+    // In case an exception gets thrown.
+    std::unique_ptr<NodeType> nodePtr(node);
+
+    nodes.emplace_back(node);
+
+    return nodePtr.release();
+  }
+};
+
+/// A type definition for a layer smart pointer.
+using LayerPtr = std::unique_ptr<Layer>;
+
+const char* getLayerName(const Layer* layer) noexcept
+{
+  return layer->name.c_str();
+}
+
+float getLayerOpacity(const Layer* layer) noexcept
+{
+  return layer->opacity;
+}
+
+void setLayerName(Layer* layer, const char* name)
+{
+  layer->name = name ? name : "";
+}
+
+void setLayerOpacity(Layer* layer, float opacity) noexcept
+{
+  layer->opacity = opacity;
 }
 
 //================//
@@ -733,6 +810,14 @@ class Encoder final : public NodeAccessor
   std::size_t indentation = 0;
 public:
   Encoder(std::ostream& stream_) : stream(stream_) {}
+  /// Encodes a single color channel.
+  ///
+  /// @param name The name to give the channel.
+  /// @param value The value to encode.
+  void encodeColorChannel(const char* name, float value)
+  {
+    encodeSize(name, std::size_t(clip(value) * colorRes()));
+  }
   /// Encodes a color.
   ///
   /// @param name The name to give the color.
@@ -749,10 +834,38 @@ public:
   {
     indent() << name << ' ' << value << std::endl;
   }
-  /// Encodes a node.
+  /// Encodes a string onto the document.
   ///
-  /// @param node The node to encode.
-  void encodeNode(const Node& node) { node.accept(*this); }
+  /// @param name The name to give the string field.
+  /// @param value The string value to add.
+  void encodeString(const char* name, const char* value)
+  {
+    indent() << name << " \"";
+
+    for (std::size_t i = 0; value[i] != 0; i++) {
+
+      if ((value[i] == '\"') || (value[i] == '\\')) {
+        stream << '\\';
+      }
+
+      stream << value[i];
+    }
+
+    stream << "\"" << std::endl;
+  }
+  /// Encodes a layer.
+  void encodeLayer(const Layer& layer)
+  {
+    auto encoder = [this, &layer]() {
+      encodeString("name", layer.name.c_str());
+      encodeColorChannel("opacity", layer.opacity);
+      for (const auto& node : layer.nodes) {
+        node->accept(*this);
+      }
+    };
+
+    encodeStruct("layer", encoder);
+  }
 protected:
   /// Converts a color into a 4 dimensional integer vector.
   ///
@@ -863,6 +976,8 @@ enum class TokenType
   Integer,
   /// A whitespace character (space, tab, newline sequences)
   Space,
+  /// A double quoted string value.
+  StringLiteral,
   /// An invalid character
   Invalid
 };
@@ -953,6 +1068,11 @@ public:
     }
 
     t = number();
+    if (t) {
+      return t;
+    }
+
+    t = stringLiteral();
     if (t) {
       return t;
     }
@@ -1081,6 +1201,38 @@ protected:
     } else {
       return Token();
     }
+  }
+  /// Scans for a double quoted string literal.
+  Token stringLiteral() noexcept
+  {
+    std::size_t match = 0;
+
+    if (!isEqual(match, '"')) {
+      return Token();
+    } else {
+      match++;
+    }
+
+    while (inBounds(match)) {
+
+      if (isEqual(match, '\\')) {
+        match++;
+      } else if (isEqual(match, '"')) {
+        break;
+      }
+
+      match++;
+    }
+
+    if (!isEqual(match, '"')) {
+      // We could either mark '"' as invalid by itself
+      // or everything up to this point. Marking everything
+      // up to this point reduces the amount of false errors
+      // to zero, so that's what we'll do.
+      return makeToken(TokenType::Invalid, match);
+    }
+
+    return makeToken(TokenType::StringLiteral, match + 1);
   }
   /// Creates a token of a certain type and size.
   inline constexpr Token makeToken(TokenType type, std::size_t s) noexcept
@@ -1222,6 +1374,50 @@ public:
     formatError(tok) << "Invalid token " << tok;
     next();
   }
+  /// Attempts to parse a layer node.
+  ///
+  /// @return A pointer to a layer node, if one is found.
+  /// Otherwise, a null pointer is returned.
+  LayerPtr parseLayer()
+  {
+    auto firstTok = look();
+
+    if (!matchID("layer")) {
+      return LayerPtr();
+    }
+
+    LayerPtr layer(new Layer());
+
+    while (remaining() && !failed() && !matchID("end")) {
+
+      auto str = parseString("name");
+      if (str.valid) {
+        layer->name = str.value;
+        continue;
+      }
+
+      auto opacity = parseColorChannel("opacity");
+      if (opacity.valid) {
+        layer->opacity = opacity.value;
+        continue;
+      }
+
+      auto node = parseNode();
+      if (node) {
+        layer->nodes.emplace_back(std::move(node));
+        continue;
+      }
+
+      if (failed()) {
+        return LayerPtr();
+      } else {
+        formatError(firstTok) << "Missing 'end' statement.";
+        return LayerPtr();
+      }
+    }
+
+    return layer;
+  }
   /// Parses for a node.
   ///
   /// @return On success, a pointer to a node.
@@ -1270,6 +1466,88 @@ public:
     }
 
     return Optional<Color>(toColor(v.value));
+  }
+  /// Attempts to parse a string.
+  ///
+  /// @param name The name of the string to parse.
+  ///
+  /// @return Optionally returns a string.
+  Optional<std::string> parseString(const char* name) noexcept
+  {
+    if (!matchID(name)) {
+      return Optional<std::string>();
+    }
+
+    auto str = parseString();
+    if (!str.valid) {
+      return Optional<std::string>();
+    }
+
+    return str;
+  }
+  /// Attempts to parse a color channel.
+  ///
+  /// @param name The name of the color channel value.
+  ///
+  /// @return Optionally returns a color channel value.
+  Optional<int> parseColorChannel(const char* name) noexcept
+  {
+    auto nameTok = look();
+
+    if (!matchID(name)) {
+      return Optional<int>();
+    }
+
+    auto i = parseInt();
+    if (!i.valid) {
+      formatError(nameTok) << "Failed to match color channel value following " << nameTok;
+      return Optional<int>();
+    }
+
+    return i;
+  }
+  /// Parses for a string literal.
+  Optional<std::string> parseString()
+  {
+    auto tok = look();
+    if (tok != TokenType::StringLiteral) {
+      formatError(tok) << "Expected a string literal, but got " << tok;
+      return Optional<std::string>();
+    }
+
+    std::string result;
+
+    for (std::size_t i = 1; (i + 1) < tok.size; i++) {
+
+      auto c = tok.data[i];
+
+      if (c == '\\') {
+        if ((i + 1) >= tok.size) {
+          parserError(tok, __LINE__);
+          return Optional<std::string>();
+        }
+        auto next = tok.data[i + 1];
+        if (next == 'r') {
+          result += '\r';
+        } else if (next == 'n') {
+          result += '\n';
+        } else if (next == '\\') {
+          result += '\\';
+        } else if (next == '"') {
+          result += '"';
+        } else {
+          formatError(tok) << "Invalid escape character found.";
+          return Optional<std::string>();
+        }
+        i++;
+      } else {
+        result += c;
+      }
+    }
+
+    next();
+
+    return Optional<std::string>(std::move(result));
   }
   /// Parses for an integer vector.
   ///
@@ -1637,8 +1915,7 @@ protected:
   }
   /// Parses a decimal integer from a string.
   ///
-  /// @param str A pointer to the string to parse.
-  /// @param s The number of characters in the string.
+  /// @param tok The token containing the string to parse.
   ///
   /// @return On success, a valid integer instance is returned.
   /// On failure, an optional container that evaluates to zero.
@@ -1708,6 +1985,17 @@ protected:
   {
     return (pos + offset) < tokens.size();
   }
+  /// Emits an error indicating that an internal parser
+  /// error has occurred.
+  void parserError(const Token& t, int line)
+  {
+    auto& stream = formatError(t);
+    stream << "Internal parser error occurred (";
+    stream << __FILE__;
+    stream << ':';
+    stream << line;
+    stream << "). Please report an issue!";
+  }
   /// Creates an error and returns it for formatting.
   ///
   /// @param t The token that caused the error.
@@ -1748,8 +2036,11 @@ protected:
 /// Contains the implementation data of the document class.
 struct Document final
 {
-  /// The nodes added to the document.
-  std::vector<std::unique_ptr<Node>> nodes;
+  /// The layers of the document, each containing the
+  /// draw operations to be completed by the painer.
+  /// The first layer is returned first and is therefore
+  /// the "bottom" layer.
+  std::vector<LayerPtr> layers;
   /// The width of the document, in pixels.
   std::size_t width = 64;
   /// The height of the document, in pixels.
@@ -1757,7 +2048,10 @@ struct Document final
   /// The default background color.
   Color background = transparent();
   /// Makes a new document.
-  Document() {}
+  Document()
+  {
+    addLayer(this);
+  }
   /// Makes a copy of the document.
   ///
   /// @param other The document to copy.
@@ -1767,11 +2061,83 @@ struct Document final
     height = other.height;
     background = other.background;
 
-    for (const auto& node : other.nodes) {
-      nodes.emplace_back(node->copy());
+    for (const auto& otherLayer : other.layers) {
+      layers.emplace_back(new Layer(*otherLayer));
     }
   }
+  /// Resets back to initial state.
+  void reset()
+  {
+    *this = Document();
+  }
+  /// Moves a document to a new variable
+  /// via move semantics.
+  Document& operator = (Document&& other)
+  {
+    layers = std::move(other.layers);
+    width = other.width;
+    height = other.height;
+    background = other.background;
+    return *this;
+  }
 };
+
+namespace {
+
+/// Indicates if a layer name exists already.
+/// This is used when automatically naming layers,
+/// so that the automatically generated layer has a
+/// unique name (even though it doesn't need one.)
+///
+/// @param doc The document to check the layer names for.
+/// @param name The name to search for.
+///
+/// @return True if the name exists, false if it does not.
+bool layerNameExists(const Document* doc, const char* name) noexcept
+{
+  for (const auto& l : doc->layers) {
+    if (l->name == name) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/// Formats a layer name.
+///
+/// @param index The index to put into the layer name.
+///
+/// @return The formatted layer name.
+std::string formatLayerName(std::size_t index)
+{
+  std::stringstream stream;
+  stream << "Layer ";
+  stream << index;
+  return stream.str();
+}
+
+/// Generates a unique layer name.
+///
+/// @param doc The document to generate the layer name for.
+///
+/// @return The unique layer name.
+std::string uniqueLayerName(const Document* doc)
+{
+  for (std::size_t i = doc->layers.size() + 1; i < SIZE_MAX; i++) {
+
+    auto name = formatLayerName(i);
+    if (!layerNameExists(doc, name.c_str())) {
+      return name;
+    }
+  }
+
+  // It would be odd if this was reached.
+
+  return "";
+}
+
+} // namespace
 
 Document* createDoc()
 {
@@ -1813,24 +2179,43 @@ bool openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
     if (w.valid) {
       doc->width = w.value;
       continue;
+    } else if (parser.failed()) {
+      break;
     }
 
     auto h = parser.parseSize("height");
     if (h.valid) {
       doc->height = h.value;
       continue;
+    } else if (parser.failed()) {
+      break;
     }
 
     auto bg = parser.parseColor("background");
     if (bg.valid) {
       doc->background = bg.value;
       continue;
+    } else if (parser.failed()) {
+      break;
     }
 
     auto node = parser.parseNode();
     if (node) {
-      doc->nodes.emplace_back(std::move(node));
+      if (doc->layers.empty()) {
+        addLayer(doc);
+      }
+      doc->layers[0]->nodes.emplace_back(std::move(node));
       continue;
+    } else if (parser.failed()) {
+      break;
+    }
+
+    auto layer = parser.parseLayer();
+    if (layer) {
+      doc->layers.emplace_back(std::move(layer));
+      continue;
+    } else if (parser.failed()) {
+      break;
     }
 
     parser.badToken();
@@ -1845,8 +2230,6 @@ bool openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
 
     return false;
   }
-
-  std::printf("node count: %u\n", unsigned(doc->nodes.size()));
 
   return true;
 }
@@ -1864,39 +2247,85 @@ bool saveDoc(const Document* doc, const char* filename)
   encoder.encodeSize("height", doc->height);
   encoder.encodeColor("background", doc->background);
 
-  for (const auto& node : doc->nodes) {
-    encoder.encodeNode(*node);
+  for (const auto& layer : doc->layers) {
+    encoder.encodeLayer(*layer);
   }
 
   return true;
 }
 
-Ellipse* addEllipse(Document* doc)
+Layer* addLayer(Document* doc)
 {
-  doc->nodes.emplace_back(new Ellipse());
+  LayerPtr layer(new Layer());
 
-  return dynamic_cast<Ellipse*>(doc->nodes[doc->nodes.size() - 1].get());
+  layer->name = uniqueLayerName(doc);
+
+  doc->layers.emplace_back(layer.get());
+
+  return layer.release();
 }
 
-Fill* addFill(Document* doc)
+void removeLayer(Document* doc, std::size_t layer)
 {
-  doc->nodes.emplace_back(new Fill());
+  // std::vector::erase causes UB if the index
+  // is out of bounds, so we have to manually check
+  // and throw an exception if that's the case.
 
-  return dynamic_cast<Fill*>(doc->nodes[doc->nodes.size() - 1].get());
+  if (layer >= doc->layers.size()) {
+    throw std::out_of_range("Layer index is out of range");
+  }
+
+  doc->layers.erase(doc->layers.begin() + layer);
 }
 
-Line* addLine(Document* doc)
+Layer* getLayer(Document* doc, std::size_t layer)
 {
-  doc->nodes.emplace_back(new Line());
-
-  return dynamic_cast<Line*>(doc->nodes[doc->nodes.size() - 1].get());
+  return doc->layers.at(layer).get();
 }
 
-Quad* addQuad(Document* doc)
+const Layer* getLayer(const Document* doc, std::size_t layer)
 {
-  doc->nodes.emplace_back(new Quad());
+  return doc->layers.at(layer).get();
+}
 
-  return dynamic_cast<Quad*>(doc->nodes[doc->nodes.size() - 1].get());
+std::size_t getLayerCount(const Document* doc) noexcept
+{
+  return doc->layers.size();
+}
+
+void moveLayer(Document* doc, std::size_t src, std::size_t dst)
+{
+  LayerPtr tmp = std::move(doc->layers.at(src));
+
+  for (std::size_t i = src; i < dst; i++) {
+    doc->layers.at(i) = std::move(doc->layers.at(i + 1));
+  }
+
+  for (std::size_t i = src; i > dst; i--) {
+    doc->layers.at(i) = std::move(doc->layers.at(i - 1));
+  }
+
+  doc->layers.at(dst) = std::move(tmp);
+}
+
+Ellipse* addEllipse(Document* doc, std::size_t layer)
+{
+  return doc->layers.at(layer)->addNode(new Ellipse());
+}
+
+Fill* addFill(Document* doc, std::size_t layer)
+{
+  return doc->layers.at(layer)->addNode(new Fill());
+}
+
+Line* addLine(Document* doc, std::size_t layer)
+{
+  return doc->layers.at(layer)->addNode(new Line());
+}
+
+Quad* addQuad(Document* doc, std::size_t layer)
+{
+  return doc->layers.at(layer)->addNode(new Quad());
 }
 
 std::size_t getDocWidth(const Document* doc) noexcept { return doc->width; }
@@ -1919,7 +2348,7 @@ void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept
 
 void setBackground(Document* doc, float r, float g, float b, float a) noexcept
 {
-  doc->background = Color { r, g, b, a };
+  doc->background = clip(Color { r, g, b, a });
 }
 
 //============================//
@@ -2288,8 +2717,10 @@ void render(const Document* doc, float* colorBuffer, std::size_t w, std::size_t 
 
   painter.clear(doc->background);
 
-  for (const auto& node : doc->nodes) {
-    node->accept(painter);
+  for (const auto& layer : doc->layers) {
+    for (const auto& node : layer->nodes) {
+      node->accept(painter);
+    }
   }
 }
 

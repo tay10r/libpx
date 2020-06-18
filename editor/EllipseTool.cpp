@@ -1,7 +1,7 @@
 #include "EllipseTool.hpp"
 
 #include "DrawTool.hpp"
-#include "Editor.hpp"
+#include "DrawMode.hpp"
 
 #include <libpx.hpp>
 
@@ -20,9 +20,7 @@ class EllipseTool final : public DrawTool
   unsigned start[2] { 0, 0 };
 public:
   /// Constructs a new ellipse tool instance.
-  ///
-  /// @param e A pointer to the editor instance.
-  EllipseTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
+  EllipseTool(DrawMode* d) : DrawTool(d) {}
   /// If an ellipse is active then this function
   /// will resize it to fit the area that the mouse
   /// is dragged over.
@@ -52,7 +50,7 @@ public:
     start[0] = pos[0];
     start[1] = pos[1];
 
-    ellipse = addEllipse(getDocument());
+    ellipse = addEllipse(getDocument(), requireCurrentLayer());
 
     setColor(ellipse, color[0], color[1], color[2]);
 
@@ -62,9 +60,9 @@ public:
 
 } // namespace
 
-DrawTool* createEllipseTool(Editor* editor, const DrawState& ds)
+DrawTool* createEllipseTool(DrawMode* d)
 {
-  return new EllipseTool(editor, ds);
+  return new EllipseTool(d);
 }
 
 } // namespace px

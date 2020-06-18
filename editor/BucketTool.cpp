@@ -17,9 +17,7 @@ class BucketTool final : public DrawTool
 {
 public:
   /// Constructs a new bucket tool instance.
-  ///
-  /// @param e A pointer to the editor instance.
-  BucketTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
+  BucketTool(DrawMode* d) : DrawTool(d) {}
   /// Handles a left click state change.
   /// If the button is being pressed, a new path is started.
   void leftClick(bool state) override
@@ -33,7 +31,7 @@ public:
     const auto* color = getPrimaryColor();
     const auto* cursor = getCursor();
 
-    Fill* fill = addFill(getDocument());
+    Fill* fill = addFill(getDocument(), requireCurrentLayer());
     if (fill) {
       setFillOrigin(fill, cursor[0], cursor[1]);
       setColor(fill, color[0], color[1], color[2]);
@@ -45,9 +43,9 @@ public:
 
 } // namespace
 
-DrawTool* createBucketTool(Editor* editor, const DrawState& ds)
+DrawTool* createBucketTool(DrawMode* d)
 {
-  return new BucketTool(editor, ds);
+  return new BucketTool(d);
 }
 
 } // namespace px

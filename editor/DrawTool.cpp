@@ -1,27 +1,53 @@
 #include "DrawTool.hpp"
 
+#include "DrawMode.hpp"
 #include "Editor.hpp"
 
 namespace px {
 
 void DrawTool::snapshotDoc()
 {
-  editor->snapshotDoc();
+  drawMode->getEditor()->snapshotDoc();
 }
 
 Document* DrawTool::getDocument() noexcept
 {
-  return editor->getDocument();
+  return drawMode->getEditor()->getDocument();
 }
 
 const Document* DrawTool::getDocument() const noexcept
 {
-  return editor->getDocument();
+  return drawMode->getEditor()->getDocument();
 }
 
 const Image* DrawTool::getImage() const noexcept
 {
-  return editor->getImage();
+  return drawMode->getEditor()->getImage();
+}
+
+float* DrawTool::getPrimaryColor() noexcept
+{
+  return drawMode->getPrimaryColor();
+}
+
+const float* DrawTool::getPrimaryColor() const noexcept
+{
+  return drawMode->getPrimaryColor();
+}
+
+const int* DrawTool::getCursor() const noexcept
+{
+  return drawMode->getCursor();
+}
+
+int DrawTool::getPixelSize() const noexcept
+{
+  return drawMode->getPixelSize();
+}
+
+std::size_t DrawTool::requireCurrentLayer()
+{
+  return drawMode->requireCurrentLayer();
 }
 
 } // namespace px

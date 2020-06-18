@@ -3,18 +3,13 @@
 
 namespace px {
 
-struct DrawState;
-
 class DrawTool;
-class Editor;
+class DrawMode;
 
 /// Creates a new instance of the color picker tool.
 ///
-/// @param editor A pointer to the editor that
-/// the tool is being created for.
-///
 /// @return A new color picker tool instance.
-DrawTool* createColorPickerTool(Editor* editor, const DrawState& ds);
+DrawTool* createColorPickerTool(DrawMode* d);
 
 } // namespace px
 

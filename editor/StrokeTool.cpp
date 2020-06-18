@@ -1,7 +1,7 @@
 #include "StrokeTool.hpp"
 
 #include "DrawTool.hpp"
-#include "Editor.hpp"
+#include "DrawMode.hpp"
 
 #include <libpx.hpp>
 
@@ -16,9 +16,7 @@ class StrokeTool final : public DrawTool
   Line* line = nullptr;
 public:
   /// Constructs a new instance of the stroke tool.
-  ///
-  /// @param e A pointer to the editor instance that the tool is for.
-  StrokeTool(Editor* e, const DrawState& ds) : DrawTool(e, ds) {}
+  StrokeTool(DrawMode* d) : DrawTool(d) {}
   /// Handles mouse movement.
   void mouseMotion(unsigned x, unsigned y) override
   {
@@ -42,7 +40,7 @@ public:
     const auto* pos = getCursor();
     const auto* color = getPrimaryColor();
 
-    line = addLine(getDocument());
+    line = addLine(getDocument(), requireCurrentLayer());
 
     setPixelSize(line, getPixelSize());
     setColor(line, color[0], color[1], color[2]);
@@ -53,9 +51,9 @@ public:
 
 } // namespace
 
-DrawTool* createStrokeTool(Editor* e, const DrawState& ds)
+DrawTool* createStrokeTool(DrawMode* d)
 {
-  return new StrokeTool(e, ds);
+  return new StrokeTool(d);
 }
 
 } // namespace px

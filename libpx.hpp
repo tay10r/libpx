@@ -62,6 +62,7 @@ struct Ellipse;
 struct ErrorList;
 struct Fill;
 struct Image;
+struct Layer;
 struct Line;
 struct Quad;
 
@@ -198,14 +199,77 @@ void closeDoc(Document* doc) noexcept;
 /// @ingroup pxDocumentApi
 Document* copyDoc(const Document* other);
 
+/// Adds a layer to the document.
+///
+/// @exception std::bad_alloc If the memory allocation
+/// required for this function fails.
+///
+/// @param doc The document to add the layer to.
+///
+/// @return A pointer to the layer that was added.
+///
+/// @ingroup pxDocumentApi
+Layer* addLayer(Document* doc);
+
+/// Removes a layer from the document.
+///
+/// @exception std::out_of_range If the @p index
+/// value is greater than or equal to the number of
+/// layers in the document.
+///
+/// @param doc The document to remove the layer from.
+/// @param index The index of the layer to remove.
+///
+/// @ingroup pxDocumentApi
+void removeLayer(Document* doc, std::size_t index);
+
+/// Gets the number of layers in a document.
+///
+/// @param doc The document to get the number of layers of.
+///
+/// @return The number of layers in the document.
+///
+/// @ingroup pxDocumentApi
+std::size_t getLayerCount(const Document* doc) noexcept;
+
+/// Gets a layer at a specified index.
+///
+/// @exception std::out_of_range exception if @p index
+/// is out of bounds (greater than or equal to the value
+/// returned by @ref getLayerCount().
+///
+/// @param doc The document to get the layer from.
+/// @param index The index of the layer to get.
+///
+/// @return A pointer to the specified layer.
+///
+/// @ingroup pxDocumentApi
+Layer* getLayer(Document* doc, std::size_t index);
+
+/// @copydoc getLayer
+const Layer* getLayer(const Document* doc, std::size_t);
+
+/// Moves a layer to a new position.
+///
+/// @exception std::out_of_range If either of the indices are out of range.
+///
+/// @param doc The document that the layer is in.
+/// @param src The index of the layer to move.
+/// @param dst The index to move the layer to.
+///
+/// @ingroup pxDocumentApi
+void moveLayer(Document* doc, std::size_t src, std::size_t dst);
+
 /// Adds a line to a document.
+///
+/// @param layer The index of the layer to add the line to.
 ///
 /// @return A pointer to a new line instance.
 /// The line is owned by the document and does
 /// not need to be manually destroyed.
 ///
 /// @ingroup pxDocumentApi
-Line* addLine(Document* doc);
+Line* addLine(Document* doc, std::size_t layer = 0);
 
 /// Adds an ellipse to a document.
 ///
@@ -213,27 +277,32 @@ Line* addLine(Document* doc);
 /// or if the the ellipse array resize fails.
 ///
 /// @param doc The document to add the ellipse to.
+/// @param layer The index of the layer to add the line to.
 ///
 /// @return A pointer to the new ellipse instance.
-Ellipse* addEllipse(Document* doc);
+///
+/// @ingroup pxDocumentApi
+Ellipse* addEllipse(Document* doc, std::size_t layer = 0);
 
 /// Adds a fill operation to the document.
 ///
 /// @param doc The document to add the fill operation to.
+/// @param layer The index of the layer to add the line to.
 ///
 /// @return A pointer to a new fill operation.
 ///
 /// @ingroup pxDocumentApi
-Fill* addFill(Document* doc);
+Fill* addFill(Document* doc, std::size_t layer = 0);
 
 /// Adds a quadrilateral to the document.
 ///
 /// @param doc The document to add the quadrilateral to.
+/// @param layer The index of the layer to add the line to.
 ///
 /// @return A pointer to the new quad structure.
 ///
 /// @ingroup pxDocumentApi
-Quad* addQuad(Document* doc);
+Quad* addQuad(Document* doc, std::size_t layer = 0);
 
 /// Gets the width of the document, in pixels.
 ///
@@ -278,6 +347,53 @@ void resizeDoc(Document* doc, std::size_t width, std::size_t height) noexcept;
 ///
 /// @ingroup pxDocumentApi
 void setBackground(Document* doc, float r, float g, float b, float a) noexcept;
+
+/// @defgroup pxLayerApi Layer API
+///
+/// @brief Contains all declarations for layers.
+
+/// Renames the layer.
+///
+/// @param layer The layer to rename.
+/// @param name The name to give the layer.
+/// There's no limitations on what characters
+/// can go into a layer name and it does not have
+/// to be unique within the document.
+///
+/// @exception std::bad_alloc If the new name
+/// can't be allocated.
+///
+/// @ingroup pxLayerApi
+void setLayerName(Layer* layer, const char* name);
+
+/// Gets the name of a layer.
+///
+/// @param layer The layer to get the name of.
+///
+/// @return A pointer to the name of the layer.
+/// This function never returns a null pointer.
+///
+/// @ingroup pxLayerApi
+const char* getLayerName(const Layer* layer) noexcept;
+
+/// Gets the opacity of a layer.
+///
+/// @param layer The layer to get the opacity of.
+///
+/// @return The opacity of @p layer.
+///
+/// @ingroup pxLayerApi
+float getLayerOpacity(const Layer* layer) noexcept;
+
+/// Sets the opacity of the layer.
+///
+/// @param layer The layer to set the opacity of.
+/// @param opacity The opacity to assign the layer.
+/// This value should be between 0 and 1.
+/// When calling this function, the opacity is clipped into that range.
+///
+/// @ingroup pxLayerApi
+void setLayerOpacity(Layer* layer, float opacity) noexcept;
 
 /// @defgroup pxEllipseApi Ellipse API
 ///
