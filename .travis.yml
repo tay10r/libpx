@@ -1,0 +1,17 @@
+language: cpp
+
+os: linux
+
+dist: bionic
+
+compiler:
+  - clang
+  - gcc
+
+install:
+  - sudo apt-get -y install freeglut3-dev
+
+script:
+  - mkdir build && cd build
+  - cmake .. -DLIBPX_EDITOR=ON -DLIBPX_CMD=ON
+  - make
