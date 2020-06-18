@@ -37,7 +37,14 @@ cd build
 cmake ..
 ```
 
-Building the editor requires OpenGL 3.0. The rest of the dependencies are included as git submodules (automatically cloned.)
+Building the editor requires OpenGL 3.0 and GLEW. The rest of the dependencies are included as git submodules (automatically cloned.)
+
+On Ubuntu, you can install this two dependencies with:
+
+```bash
+sudo apt install freeglut3-dev libglew-dev
+```
+
 To build the editor, you'll need to pass `-DLIBPX_EDITOR=ON` to CMake.
 
 ```

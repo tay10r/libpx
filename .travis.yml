@@ -9,7 +9,7 @@ compiler:
   - gcc
 
 install:
-  - sudo apt-get -y install freeglut3-dev
+  - sudo apt-get -y install freeglut3-dev libglew-dev
 
 script:
   - mkdir build && cd build
