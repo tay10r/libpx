@@ -3,7 +3,8 @@
 
 namespace px {
 
-class Document;
+struct Document;
+
 class HistoryImpl;
 
 /// Used for storing snapshots of the

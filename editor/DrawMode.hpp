@@ -9,7 +9,8 @@
 
 namespace px {
 
-class Document;
+struct Document;
+
 class Editor;
 
 class DrawMode : public Mode

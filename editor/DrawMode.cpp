@@ -119,8 +119,8 @@ public:
     }
   }
 
-  Editor* getEditor() noexcept { return editor; }
-  const Editor* getEditor() const noexcept { return editor; }
+  Editor* getEditor() noexcept override { return editor; }
+  const Editor* getEditor() const noexcept override { return editor; }
 
   /// Gets the current pixel size.
   int getPixelSize() const noexcept override { return pixelSize; }

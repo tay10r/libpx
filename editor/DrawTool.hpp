@@ -7,10 +7,11 @@
 
 namespace px {
 
-class Document;
+struct Document;
+struct Image;
+
 class DrawMode;
 class Editor;
-class Image;
 
 /// The base of any tool that can be used
 /// in the editor in draw mode.

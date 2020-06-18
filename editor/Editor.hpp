@@ -3,9 +3,10 @@
 
 namespace px {
 
-class Document;
+struct Document;
+struct Image;
+
 class EditorImpl;
-class Image;
 
 /// Represents the application as a whole.
 /// Contains the main window used to interface
