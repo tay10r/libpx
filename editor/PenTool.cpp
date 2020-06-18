@@ -36,6 +36,10 @@ public:
   void leftClick(bool state) override
   {
     if (!state) {
+      // Mouse dragging causes a lot of redundant
+      // points. Calling this function simplifies the
+      // line and removes the redundancies.
+      dissolvePoints(line);
       line = nullptr;
       return;
     }

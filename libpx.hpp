@@ -498,6 +498,17 @@ void setColor(Line* line, float r, float g, float b) noexcept;
 /// @ingroup pxLineApi
 void addPoint(Line* line, int x, int y);
 
+/// This function removes meaningless points
+/// from a line. A point is meaningless if it
+/// is equal to its neighboring point or if it
+/// has the same slope from its left and right
+/// neighboring point.
+///
+/// @param line The line to dissolve the points for.
+///
+/// @ingroup pxLineApi
+void dissolvePoints(Line* line) noexcept;
+
 /// Gets the number of points in a line.
 ///
 /// @param line The line to get the point count of.

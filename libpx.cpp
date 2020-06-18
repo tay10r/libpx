@@ -248,7 +248,7 @@ constexpr Color premultiply(const Color& c) noexcept
                  c[3] };
 }
 
-/// Indicates if two 2D vectors are equal.
+/// Indicates if two integer vectors are equal.
 inline bool operator == (const Vec2& a, const Vec2& b) noexcept
 {
   return (a[0] == b[0]) && (a[1] == b[1]);
@@ -428,6 +428,74 @@ struct Line final : public StrokeNode
 void addPoint(Line* line, int x, int y)
 {
   line->points.emplace_back(Vec2 { x, y });
+}
+
+namespace {
+
+/// Removes duplicate neighboring points from a line.
+///
+/// @param line The line to remove the duplicate neighboring points of.
+void removeDuplicatePoints(Line* line) noexcept
+{
+  std::size_t i = 1;
+
+  while (i < line->points.size()) {
+    auto a = line->points[i - 1];
+    auto b = line->points[i - 0];
+    if (a == b) {
+      line->points.erase(line->points.begin() + (i - 1));
+    } else {
+      i++;
+    }
+  }
+}
+
+/// Removes points that have duplicate neighboring slopes.
+void removeDuplicateSlopes(Line* line) noexcept
+{
+  std::size_t i = 1;
+
+  while (i < (line->points.size() - 1)) {
+
+    auto a = line->points[i - 1];
+    auto b = line->points[i - 0];
+    auto c = line->points[i + 1];
+
+    auto diffA = b - a;
+    auto diffB = c - b;
+
+    // Two vertical slopes must be handled specifically
+    // because they would otherwise cause a divide by zero exception.
+    if (!diffA[0] && !diffB[0]) {
+      line->points.erase(line->points.begin() + i);
+      continue;
+    }
+
+    // Same as before, we want to avoid divide by zero errors
+    // by checking either X-delta. Since we know they're not equal,
+    // if one of them is zero then the two slopes are different.
+    if (!diffA[0] || !diffB[0]) {
+      i++;
+      continue;
+    }
+
+    auto slopeA = diffA[1] / diffA[0];
+    auto slopeB = diffB[1] / diffB[0];
+
+    if (slopeA == slopeB) {
+      line->points.erase(line->points.begin() + i);
+    } else {
+      i++;
+    }
+  }
+}
+
+} // namespace
+
+void dissolvePoints(Line* line) noexcept
+{
+  removeDuplicatePoints(line);
+  removeDuplicateSlopes(line);
 }
 
 std::size_t getPointCount(const Line* line) noexcept
