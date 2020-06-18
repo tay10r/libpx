@@ -60,6 +60,8 @@ class EditorImpl final
   /// The base color of the checkerboard background.
   /// This should only be changed for color theme purposes.
   float checkerboardColor[3] { 1.0f, 1.0f, 1.0f };
+  /// The path to the document being edited.
+  std::string docPath;
   /// The document modification history.
   /// This is where the document pointer
   /// is retrived from.
@@ -98,6 +100,26 @@ class EditorImpl final
   /// Calculates the transform from window
   /// to edit space.
   glm::mat4 calcTransform() noexcept;
+  /// Indicates if the document has a path or not.
+  bool docHasPath() const noexcept
+  {
+    return !docPath.empty();
+  }
+  /// Starts the save dialog, if there's not
+  /// currently a dialog running.
+  ///
+  /// @return True if the save dialog was started,
+  /// false if there was already one running.
+  bool startSaveDialog()
+  {
+    if (dialog) {
+      return false;
+    }
+
+    dialog.reset(createSaveDialog());
+
+    return true;
+  }
 };
 
 EditorImpl::~EditorImpl()
@@ -285,6 +307,8 @@ bool Editor::openDoc(const char* path)
     return false;
   }
 
+  impl->docPath = path;
+
   return true;
 }
 
@@ -293,6 +317,7 @@ bool Editor::saveDoc(const char* path)
   const auto* doc = getDocument();
 
   if (px::saveDoc(doc, path)) {
+    impl->docPath = path;
     impl->history.markSaved();
     return true;
   } else {
@@ -423,8 +448,17 @@ void Editor::renderFileMenu()
       impl->dialog = std::unique_ptr<Dialog>(createOpenDialog());
     }
 
-    ImGui::MenuItem("Save");
-    ImGui::MenuItem("Save As...");
+    if (ImGui::MenuItem("Save")) {
+      if (impl->docHasPath()) {
+        saveDoc(impl->docPath.c_str());
+      } else {
+        impl->startSaveDialog();
+      }
+    }
+
+    if (ImGui::MenuItem("Save As...")) {
+      impl->startSaveDialog();
+    }
 
     if (ImGui::MenuItem("Export") && !impl->dialog) {
       impl->dialog = std::unique_ptr<Dialog>(createExportDialog());
@@ -518,7 +552,7 @@ void Editor::renderUi()
     // to fire up the unsaved changes dialog.
 
     if (shouldExit() && !canSafelyExit()) {
-      impl->dialog.reset(createSaveDialog());
+      createSaveDialog();
     }
   }
 
