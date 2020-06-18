@@ -498,6 +498,47 @@ void setColor(Line* line, float r, float g, float b) noexcept;
 /// @ingroup pxLineApi
 void addPoint(Line* line, int x, int y);
 
+/// Gets the number of points in a line.
+///
+/// @param line The line to get the point count of.
+///
+/// @return The number of points in the line.
+///
+/// @ingroup pxLineApi
+std::size_t getPointCount(const Line* line) noexcept;
+
+/// Gets a point from the line.
+///
+/// @exception std::out_of_range If @p index is out of bounds.
+///
+/// @param line The line to get the point of.
+/// @param index The index of the point to get.
+/// @param point The address to assign the point values at.
+/// This parameter must be able to hold two integers.
+///
+/// @ingroup pxLineApi
+void getPoint(const Line* line, std::size_t index, int* point);
+
+/// Gets the X coordinate of a point in a line.
+///
+/// @exception std::out_of_range If @p index is out of bounds.
+///
+/// @param line The line to get the X coordinate from.
+/// @param index The index of the point to get the X coordinate from.
+///
+/// @return The X component of the specified point.
+int getPointX(const Line* line, std::size_t index);
+
+/// Gets the Y coordinate of a point in a line.
+///
+/// @exception std::out_of_range If @p index is out of bounds.
+///
+/// @param line The line to get the Y coordinate from.
+/// @param index The index of the point to get the Y coordinate from.
+///
+/// @return The Y component of the specified point.
+int getPointY(const Line* line, std::size_t index);
+
 /// Sets the pixel size of a line.
 ///
 /// @param line The line to set the pixel size of.

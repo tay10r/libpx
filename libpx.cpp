@@ -427,15 +427,29 @@ struct Line final : public StrokeNode
 
 void addPoint(Line* line, int x, int y)
 {
-  // Check for duplicate point.
-  if (line->points.size() > 0) {
-    const auto& last = line->points[line->points.size() - 1];
-    if ((last[0] == x) && (last[1] == y)) {
-      return;
-    }
-  }
-
   line->points.emplace_back(Vec2 { x, y });
+}
+
+std::size_t getPointCount(const Line* line) noexcept
+{
+  return line->points.size();
+}
+
+void getPoint(const Line* line, std::size_t index, int* point)
+{
+  auto& p = line->points.at(index);
+  point[0] = p[0];
+  point[1] = p[1];
+}
+
+int getPointX(const Line* line, std::size_t index)
+{
+  return line->points.at(index)[0];
+}
+
+int getPointY(const Line* line, std::size_t index)
+{
+  return line->points.at(index)[1];
 }
 
 bool setPoint(Line* line, std::size_t index, int x, int y) noexcept
