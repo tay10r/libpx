@@ -1,7 +1,35 @@
 cmake_minimum_required(VERSION 3.0)
 
+# Setup the core application target.
+# This implements the UI and all of the logic.
+
+add_library(pxedit_core OBJECT
+  App.hpp
+  App.cpp)
+
+target_compile_options(pxedit_core PRIVATE ${px_cxxflags})
+
+target_link_libraries(pxedit_core PRIVATE imgui)
+
+# Setup the OpenGL/GLFW bindings.
+# This implements the platform specific code
+# for OpenGL and GLFW.
+
 find_package(OpenGL REQUIRED COMPONENTS OpenGL)
 find_package(GLEW   REQUIRED)
+
+add_executable(pxedit_gl WIN32
+  Platform.hpp
+  glPlatform.cpp
+  $<TARGET_OBJECTS:pxedit_core>)
+
+target_compile_options(pxedit_gl PRIVATE ${px_cxxflags})
+
+target_link_libraries(pxedit_gl PRIVATE px glfw imgui_gl OpenGL::OpenGL GLEW::GLEW)
+
+set_target_properties(pxedit_gl
+  PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 
 add_executable(pxedit WIN32
   main.cpp
@@ -46,7 +74,7 @@ add_executable(pxedit WIN32
   StrokeTool.hpp
   StrokeTool.cpp)
 
-target_link_libraries(pxedit PRIVATE px pfd glfw glm OpenGL::OpenGL imgui GLEW::GLEW stb)
+target_link_libraries(pxedit PRIVATE px pfd glfw glm OpenGL::OpenGL imgui_gl GLEW::GLEW stb)
 
 set_target_properties(pxedit PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
 

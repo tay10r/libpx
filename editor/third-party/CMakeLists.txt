@@ -16,11 +16,14 @@ add_subdirectory(glm)
 add_library(imgui
   imgui/imgui.cpp
   imgui/imgui_draw.cpp
-  imgui/imgui_widgets.cpp
+  imgui/imgui_widgets.cpp)
+
+add_library(imgui_gl
   imgui/examples/imgui_impl_glfw.cpp
   imgui/examples/imgui_impl_opengl3.cpp)
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/examples")
+target_link_libraries(imgui_gl PUBLIC imgui)
 
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
