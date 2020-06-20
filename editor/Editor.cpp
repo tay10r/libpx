@@ -26,6 +26,7 @@
 #include "History.hpp"
 #include "ImageIO.hpp"
 #include "Mode.hpp"
+#include "Shaders.hpp"
 
 #include "ExportDialog.hpp"
 #include "OpenDialog.hpp"
@@ -36,16 +37,6 @@
 #include "PoseMode.hpp"
 
 namespace px {
-
-namespace {
-
-/// This is the GLSL source code for the vertex shader.
-extern const char* vertexShaderSource;
-
-/// This is the GLSL source code for the fragment shader.
-extern const char* fragmentShaderSource;
-
-} // namespace
 
 /// Represents the graphical editor window.
 class EditorImpl final
@@ -368,12 +359,12 @@ bool Editor::initGlData()
 
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  impl->vertexShader = setupShader("Vertex Shader", vertexShaderSource, GL_VERTEX_SHADER);
+  impl->vertexShader = setupShader("Vertex Shader", vertexShader, GL_VERTEX_SHADER);
   if (!impl->vertexShader) {
     return false;
   }
 
-  impl->fragmentShader = setupShader("Fragment Shader", fragmentShaderSource, GL_FRAGMENT_SHADER);
+  impl->fragmentShader = setupShader("Fragment Shader", fragmentShader, GL_FRAGMENT_SHADER);
   if (!impl->fragmentShader) {
     return false;
   }
@@ -694,69 +685,5 @@ void Editor::darkMode()
 {
   ImGui::StyleColorsDark();
 }
-
-namespace {
-
-const char* vertexShaderSource = R"(
-#version 330 core
-
-layout(location = 0) in vec3 pos;
-layout(location = 1) in vec2 texCoord;
-
-uniform mat4 transform = mat4(1.0);
-
-out vec2 texCoord2;
-
-void main() {
-  gl_Position = transform * vec4(pos, 1);
-  texCoord2 = texCoord;
-}
-)";
-
-const char* fragmentShaderSource = R"(
-#version 330 core
-
-out vec4 color;
-
-in vec2 texCoord2;
-
-in vec4 gl_FragCoord;
-
-uniform sampler2D imageTexture;
-
-uniform float contrast = 0.1;
-
-uniform ivec2 cursorPos = ivec2(0, 0);
-
-uniform vec3 checkerboardColor = vec3(1.0f, 1.0f, 1.0f);
-
-void main() {
-
-  ivec2 texelSize = textureSize(imageTexture, 0);
-
-  vec2 pos = floor(texCoord2 * texelSize);
-
-  float hoverMask = ((int(pos.x) == cursorPos.x)
-                  && (int(pos.y) == cursorPos.y)) ? 1 : 0;
-
-  float patternMask = mod(pos.x + mod(pos.y, 2.0f), 2.0f);
-
-  patternMask = (1.0f - contrast) + (patternMask * contrast) + (0.5f - (0.5f * hoverMask));
-
-  patternMask /= 1.5;
-
-  vec4 bg = vec4(patternMask * vec3(1.0f, 1.0f, 1.0f), 1.0f);
-
-  vec4 fg = texture(imageTexture, texCoord2);
-
-  // TODO : Remove premultiply here when it is
-  // implemented beforehand
-  //fg.rgb = fg.rgb * fg.a;
-
-  color = fg + (bg * (1.0f - fg.a));
-}
-)";
-
-} // namespace
 
 } // namespace px

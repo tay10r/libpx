@@ -12,6 +12,10 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   set(px_cxxflags -Wall -Wextra -Werror -Wfatal-errors -std=c++14)
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
+if(EMSCRIPTEN)
+  set(CMAKE_EXECUTABLE_SUFFIX .html)
+endif(EMSCRIPTEN)
+
 add_library(px libpx.hpp libpx.cpp)
 
 target_include_directories(px PUBLIC "${CMKAE_CURRENT_SOURCE_DIR}")

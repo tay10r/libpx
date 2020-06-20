@@ -1,7 +1,11 @@
 #ifndef LIBPX_EDITOR_PLATFORM_HPP
 #define LIBPX_EDITOR_PLATFORM_HPP
 
+#include <cstddef>
+
 namespace px {
+
+class Renderer;
 
 /// This is the interface to the host platform
 /// that's running the program. Possibilities include
@@ -11,12 +15,12 @@ class Platform
 public:
   /// Just a stub.
   virtual ~Platform() {}
-  /// Renders the document onto the window.
-  virtual void renderDocument() = 0;
-  /// Clears the contents of the window frame.
-  /// The contents are replaced with a color specified in the parameters.
-  /// All color components should be between 0 and 1.
-  virtual void clear(float r, float g, float b, float a) = 0;
+  /// Gets the renderer used by the platform.
+  /// This can be used to paint the document result
+  /// and various other things.
+  ///
+  /// @return A pointer to the renderer used by the platform.
+  virtual Renderer* getRenderer() noexcept = 0;
 };
 
 } // namespace px
