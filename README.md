@@ -1,5 +1,7 @@
 # libpx
 
+[![Build Status](https://travis-ci.org/tay10r/libpx.svg?branch=master)](https://travis-ci.org/tay10r/libpx)
+
 *Note:* This project is still a work in progress.
 
 This project is two things:
