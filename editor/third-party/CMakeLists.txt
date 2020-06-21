@@ -44,7 +44,8 @@ if(NOT EMSCRIPTEN)
   add_library(imgui_gl
     imgui/examples/imgui_impl_glfw.cpp
     imgui/examples/imgui_impl_opengl3.cpp)
-  target_link_libraries(imgui_gl PUBLIC imgui)
+
+  target_link_libraries(imgui_gl PUBLIC imgui glfw)
 
 endif(NOT EMSCRIPTEN)
 
