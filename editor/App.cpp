@@ -1,10 +1,13 @@
 #include "App.hpp"
 
 #include "AppState.hpp"
+#include "Blob.hpp"
 #include "DocumentProperties.hpp"
 #include "DrawState.hpp"
 #include "History.hpp"
+#include "ImageIO.hpp"
 #include "Input.hpp"
+#include "LocalStorage.hpp"
 #include "Log.hpp"
 #include "MenuBar.hpp"
 #include "Platform.hpp"
@@ -224,6 +227,7 @@ protected:
       case MenuBar::Event::ClickedExportZip:
         break;
       case MenuBar::Event::ClickedExportCurrentFrame:
+        exportCurrentFrame();
         break;
       case MenuBar::Event::ClickedRedo:
         redo();
@@ -279,6 +283,13 @@ protected:
         renderer->setCheckerboardContrast(styleEditor.getCheckerboardContrast());
         break;
     }
+  }
+  /// Writes a PNG file containing the current frame.
+  void exportCurrentFrame()
+  {
+    Blob blob = formatPNG(image);
+
+    LocalStorage::save("Untitled.png", blob.data(), blob.size());
   }
   /// Undoes a document change.
   void undo()

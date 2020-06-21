@@ -10,6 +10,8 @@ add_library(pxedit_core OBJECT
   App.cpp
   AppState.hpp
   AppState.cpp
+  Blob.hpp
+  Blob.cpp
   BucketTool.hpp
   BucketTool.cpp
   ColorPickerTool.hpp
@@ -26,10 +28,14 @@ add_library(pxedit_core OBJECT
   EllipseTool.cpp
   EraserTool.hpp
   EraserTool.cpp
+  Fs.hpp
+  Fs.cpp
   History.hpp
   History.cpp
   MenuBar.hpp
   MenuBar.cpp
+  ImageIO.hpp
+  ImageIO.cpp
   LayerPanel.hpp
   LayerPanel.cpp
   Log.hpp
@@ -45,7 +51,7 @@ add_library(pxedit_core OBJECT
 
 target_compile_options(pxedit_core PRIVATE ${px_cxxflags})
 
-target_link_libraries(pxedit_core PRIVATE imgui px glm)
+target_link_libraries(pxedit_core PRIVATE imgui px glm stb)
 
 if(EMSCRIPTEN)
 
@@ -56,11 +62,16 @@ if(EMSCRIPTEN)
     SdlPlatform.cpp
     Shaders.hpp
     Shaders.cpp
+    LocalStorage.hpp
+    LocalStorageBrowser.cpp
     $<TARGET_OBJECTS:pxedit_core>)
 
   target_compile_options(pxedit_sdl PRIVATE ${px_cxxflags} -s USE_SDL=2)
 
-  target_link_options(pxedit_sdl PRIVATE -s USE_SDL=2 --shell-file "${CMAKE_CURRENT_SOURCE_DIR}/shell.html")
+  target_link_options(pxedit_sdl PRIVATE
+    -s USE_SDL=2
+    --pre-js "${CMAKE_CURRENT_SOURCE_DIR}/js/pxedit.js"
+    --shell-file "${CMAKE_CURRENT_SOURCE_DIR}/shell.html")
 
   target_link_libraries(pxedit_sdl PRIVATE px imgui_sdl)
 
@@ -84,6 +95,8 @@ add_executable(pxedit_glfw WIN32
   GlRenderer.cpp
   Shaders.hpp
   Shaders.cpp
+  LocalStorage.hpp
+  LocalStorageNative.cpp
   $<TARGET_OBJECTS:pxedit_core>)
 
 target_compile_options(pxedit_glfw PRIVATE ${px_cxxflags})
@@ -93,60 +106,3 @@ target_link_libraries(pxedit_glfw PRIVATE px glfw imgui_gl OpenGL::OpenGL GLEW::
 set_target_properties(pxedit_glfw
   PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-
-return()
-
-add_executable(pxedit WIN32
-  main.cpp
-  BucketTool.hpp
-  BucketTool.cpp
-  ColorPickerTool.hpp
-  ColorPickerTool.cpp
-  Dialog.hpp
-  Dialog.cpp
-  DrawMode.hpp
-  DrawMode.cpp
-  DrawState.hpp
-  DrawTool.hpp
-  DrawTool.cpp
-  EditMode.hpp
-  EditMode.cpp
-  Editor.hpp
-  Editor.cpp
-  EllipseTool.hpp
-  EllipseTool.cpp
-  EraserTool.hpp
-  EraserTool.cpp
-  ExportDialog.hpp
-  ExportDialog.cpp
-  Fs.hpp
-  Fs.cpp
-  History.hpp
-  History.cpp
-  ImageIO.hpp
-  ImageIO.cpp
-  Mode.hpp
-  OpenDialog.hpp
-  OpenDialog.cpp
-  PenTool.hpp
-  PenTool.cpp
-  PoseMode.hpp
-  PoseMode.cpp
-  RectTool.hpp
-  RectTool.cpp
-  SaveDialog.hpp
-  SaveDialog.cpp
-  Shaders.hpp
-  Shaders.cpp
-  StrokeTool.hpp
-  StrokeTool.cpp)
-
-target_link_libraries(pxedit PRIVATE px pfd glfw glm OpenGL::OpenGL imgui_gl GLEW::GLEW stb)
-
-set_target_properties(pxedit PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
-
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-  target_compile_definitions(px PRIVATE PX_DEBUG)
-endif(CMAKE_BUILD_TYPE STREQUAL Debug)
-
-target_compile_options(pxedit PRIVATE ${px_cxxflags})

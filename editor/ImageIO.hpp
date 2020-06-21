@@ -3,7 +3,17 @@
 
 namespace px {
 
+class Blob;
+
 struct Image;
+
+/// Formats an image as a PNG file,
+/// putting the file into a blob.
+///
+/// @param image The image to format.
+///
+/// @return The blob object containing the image data.
+Blob formatPNG(const Image* image);
 
 /// Saves an image to a PNG file.
 ///
