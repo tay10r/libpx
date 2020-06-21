@@ -9,6 +9,8 @@ This project is two things:
  - A portable C++ library for rendering pixel art
  - A corresponding GUI editor
 
+Try it [here!](https://tay10r.github.io/libpx_site/editor/pxedit_sdl.html)
+
 ### Why Another Pixel Art Editor?
 
 Once thing that's usually missing from pixel art editors is an easy way to make smooth animations.
