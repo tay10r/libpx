@@ -18,7 +18,7 @@ endif(EMSCRIPTEN)
 
 add_library(px libpx.hpp libpx.cpp)
 
-target_include_directories(px PUBLIC "${CMKAE_CURRENT_SOURCE_DIR}")
+target_include_directories(px PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_compile_options(px PRIVATE ${px_cxxflags})
 
