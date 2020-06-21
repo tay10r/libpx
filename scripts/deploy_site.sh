@@ -24,6 +24,11 @@ if [ ! -e "$editor_src_dir/pxedit_sdl.html" ]; then
   exit 1
 fi
 
+if [ -e "$site_dir" ]; then
+  echo "Site directory already exists."
+  exit 1
+fi
+
 doxygen
 
 git clone git@github.com:tay10r/libpx_site.git "$site_dir" && cd "$site_dir"
