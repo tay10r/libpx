@@ -44,8 +44,8 @@ void MenuBar::fileMenu(Observer* observer)
     observer->observe(Event::ClickedSave);
   }
 
-  if (ImGui::MenuItem("Save As")) {
-    observer->observe(Event::ClickedSaveAs);
+  if (ImGui::MenuItem("Save as PX File")) {
+    observer->observe(Event::ClickedSaveAsPx);
   }
 
   if (ImGui::BeginMenu("Export")) {

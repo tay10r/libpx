@@ -2596,14 +2596,15 @@ int openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
   return 0;
 }
 
-bool saveDoc(const Document* doc, const char* filename)
-{
-  std::ofstream file(filename);
-  if (!file.good()) {
-    return false;
-  }
+namespace {
 
-  Encoder encoder(file);
+/// Encodes the document onto a stream.
+///
+/// @param doc The document to encode.
+/// @param stream The stream to encode the document to.
+void encodeDoc(const Document* doc, std::ostream& stream)
+{
+  Encoder encoder(stream);
 
   encoder.encodeSize("width", doc->width);
   encoder.encodeSize("height", doc->height);
@@ -2612,8 +2613,36 @@ bool saveDoc(const Document* doc, const char* filename)
   for (const auto& layer : doc->layers) {
     encoder.encodeLayer(*layer);
   }
+}
+
+} // namespace
+
+bool saveDoc(const Document* doc, const char* filename)
+{
+  std::ofstream file(filename);
+  if (!file.good()) {
+    return false;
+  }
+
+  encodeDoc(doc, file);
 
   return true;
+}
+
+void saveDoc(const Document* doc, void** data, std::size_t* size)
+{
+  // Hardly the best approach but it's nice and simple.
+
+  std::ostringstream stream;
+
+  encodeDoc(doc, stream);
+
+  auto tmp = stream.str();
+
+  *data = std::malloc(tmp.size());
+  *size = tmp.size();
+
+  std::memcpy(*data, tmp.data(), tmp.size());
 }
 
 Layer* addLayer(Document* doc)

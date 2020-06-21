@@ -220,7 +220,8 @@ protected:
         break;
       case MenuBar::Event::ClickedSave:
         break;
-      case MenuBar::Event::ClickedSaveAs:
+      case MenuBar::Event::ClickedSaveAsPx:
+        saveDocument();
         break;
       case MenuBar::Event::ClickedExportSpriteSheet:
         break;
@@ -283,6 +284,19 @@ protected:
         renderer->setCheckerboardContrast(styleEditor.getCheckerboardContrast());
         break;
     }
+  }
+  /// Saves the document to local storage.
+  void saveDocument()
+  {
+    void* data = nullptr;
+
+    size_t size = 0;
+
+    saveDoc(getDocument(), &data, &size);
+
+    LocalStorage::save("Untitled.px", data, size);
+
+    std::free(data);
   }
   /// Writes a PNG file containing the current frame.
   void exportCurrentFrame()

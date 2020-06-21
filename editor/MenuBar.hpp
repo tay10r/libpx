@@ -38,7 +38,7 @@ public:
     ClickedOpen,
     ClickedRedo,
     ClickedSave,
-    ClickedSaveAs,
+    ClickedSaveAsPx,
     ClickedUndo,
     ClickedQuit,
     ClickedCustomTheme,

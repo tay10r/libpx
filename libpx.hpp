@@ -204,6 +204,14 @@ int openDoc(Document* doc, const char* filename, ErrorList** errList = nullptr);
 /// @ingroup pxDocumentApi
 bool saveDoc(const Document* doc, const char* filename);
 
+/// Saves a document to a memory buffer.
+///
+/// @param doc The document to save.
+/// @param data Is assigned memory allocated with malloc() that
+/// contains the formatted document data.
+/// @param size Is assigned the number of bytes allocated in @p data.
+void saveDoc(const Document* doc, void** data, std::size_t* size);
+
 /// Releases memory allocated by a document.
 ///
 /// @param doc The document to release the memory of.
