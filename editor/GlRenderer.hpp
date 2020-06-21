@@ -26,23 +26,28 @@ class GlRenderer final : public Renderer
   GLuint elementBuffer = 0;
   /// The quadrilateral vertex buffer.
   GLuint vertexBuffer = 0;
-  /// An index to the texture coordinate buffer.
-  GLuint texCoordBuffer = 0;
+
   /// The vertex shader ID.
   GLuint vertexShader = 0;
   /// The fragment shader ID.
   GLuint fragmentShader = 0;
+  /// The GL program ID.
+  GLuint program = 0;
+
   /// The ID of the texture that
   /// receives the painter output.
   GLuint texture = 0;
-  /// The GL program ID.
-  GLuint program = 0;
+
   /// The location of the image transformation.
   GLuint transformLocation = 0;
   /// The base color of the checkerboard background.
   GLuint checkerboardColorLocation = 0;
+  /// The location of the checkerboard contrast value.
+  GLuint checkerboardContrastLocation = 0;
   /// The location of the cursor position variable.
   GLuint cursorPosLocation = 0;
+  /// The location of the grid size variable.
+  GLuint gridSizeLocation = 0;
 public:
   /// Releases the data allocated by the renderer.
   ~GlRenderer();
@@ -60,6 +65,7 @@ public:
   /// Clears the background.
   void clear(float r, float g, float b, float a) override;
   /// Sets the base color of the checkerboard pattern.
+  /// This should not be premultiplied.
   void setCheckerboardColor(float r, float g, float b, float a) override;
   /// Sets the checkerboard contrast.
   void setCheckerboardContrast(float contrast) override;
@@ -68,10 +74,8 @@ public:
   /// @param x The X coordinate of the cursor.
   /// @param y The Y coordinate of the cursor.
   void setCursor(int x, int y) override;
-  /// Sets the translation values.
-  void setTranslation(float x, float y) override;
-  /// Sets the zoom factor.
-  void setZoom(float zoom) override;
+  /// Sets the transformation values.
+  void setTransform(const float* transform) override;
 protected:
   /// Initializes a shader.
   ///

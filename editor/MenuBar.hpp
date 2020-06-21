@@ -12,6 +12,8 @@ class MenuBar final
   {
     /// Whether or not the draw panel is visible.
     bool drawPanel = true;
+    /// Whether or not the layer panel is visible.
+    bool layerPanel = true;
     /// Whether or not the document properties are visible.
     bool docProperties = true;
     /// Whether or not the log is visible.
@@ -40,7 +42,9 @@ public:
     ClickedUndo,
     ClickedQuit,
     ClickedCustomTheme,
-    ClickedTheme
+    ClickedTheme,
+    ClickedZoomIn,
+    ClickedZoomOut
   };
   /// Used for observing events from the menu bar.
   class Observer
@@ -58,6 +62,11 @@ public:
   {
     return visibility.drawPanel;
   }
+  /// Whether or not the layer panel should be visible.
+  inline bool layerPanelVisible() const noexcept
+  {
+    return visibility.layerPanel;
+  }
   /// Indicates whether or not the document properties should be visible.
   inline bool documentPropertiesVisible() const noexcept
   {
@@ -67,6 +76,11 @@ public:
   inline bool logVisible() const noexcept
   {
     return visibility.log;
+  }
+  /// Indicates whether or not the style editor is visible.
+  inline bool styleEditorVisible() const noexcept
+  {
+    return visibility.styleEditor;
   }
   /// Gets the name of the currently selected theme.
   inline const char* getSelectedTheme() const noexcept

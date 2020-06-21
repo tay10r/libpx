@@ -785,6 +785,33 @@ const char* getErrorSource(const ErrorList* errList) noexcept;
 /// @ingroup pxErrorListApi
 std::size_t getErrorSourceSize(const ErrorList* errList) noexcept;
 
+// One liners beyond this point.
+
+inline void setBackground(Document* document, const float* rgba) noexcept
+{
+  setBackground(document, rgba[0], rgba[1], rgba[2], rgba[3]);
+}
+
+inline void setColor(Ellipse* ellipse, const float* rgba) noexcept
+{
+  return setColor(ellipse, rgba[0], rgba[1], rgba[2], rgba[3]);
+}
+
+inline void setColor(Fill* fill, const float* rgba) noexcept
+{
+  return setColor(fill, rgba[0], rgba[1], rgba[2], rgba[3]);
+}
+
+inline void setColor(Line* line, const float* rgba) noexcept
+{
+  return setColor(line, rgba[0], rgba[1], rgba[2], rgba[3]);
+}
+
+inline void setColor(Quad* quad, const float* rgba) noexcept
+{
+  return setColor(quad, rgba[0], rgba[1], rgba[2], rgba[3]);
+}
+
 } // namespace px
 
 #endif /* LIBPX_LIBPX_HPP */

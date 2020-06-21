@@ -55,6 +55,40 @@ public:
   /// @param observer An optional pointer to observe
   /// changes that occur.
   void frame(Observer* observer = nullptr);
+  /// Accesses the enumeration value
+  /// of the current tool selected by the user.
+  inline Tool getCurrentTool() const noexcept
+  {
+    return currentTool;
+  }
+  /// Accesses the primary color.
+  ///
+  /// @return A non-const pointer to the primary color.
+  inline float* getPrimaryColor() noexcept
+  {
+    return primaryColor;
+  }
+  /// Accesses the primary color.
+  ///
+  /// @return A non pointer to the primary color.
+  inline const float* getPrimaryColor() const noexcept
+  {
+    return primaryColor;
+  }
+  /// Accesses the current pixel size.
+  ///
+  /// @return The current pixel size.
+  inline int getPixelSize() const noexcept
+  {
+    return pixelSize;
+  }
+  /// Accesses the current blend mode.
+  ///
+  /// @return The current blend mode.
+  inline BlendMode getBlendMode() const noexcept
+  {
+    return blendMode;
+  }
 protected:
   /// Renders the available tools.
   void availableTools(Observer*);

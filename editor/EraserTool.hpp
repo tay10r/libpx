@@ -1,15 +1,20 @@
 #ifndef LIBPX_EDITOR_ERASER_TOOL_HPP
 #define LIBPX_EDITOR_ERASER_TOOL_HPP
 
+#include "DrawTool.hpp"
+
 namespace px {
 
-class DrawTool;
-class DrawMode;
-
-/// Creates a new instance of the eraser tool.
-///
-/// @return A new eraser tool instance.
-DrawTool* createEraserTool(DrawMode* drawMode);
+class EraserTool final : public DrawTool
+{
+  Line* line = nullptr;
+public:
+  using DrawTool::DrawTool;
+protected:
+  void onBegin(const MouseButtonEvent&, int, int) override;
+  void onDrag(const MouseMotionEvent&, int, int) override;
+  void onEnd(int, int) override;
+};
 
 } // namespace px
 

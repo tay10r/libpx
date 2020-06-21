@@ -78,11 +78,11 @@ void MenuBar::editMenu(Observer* observer)
     return;
   }
 
-  if (ImGui::MenuItem("Undo")) {
+  if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
     observer->observe(Event::ClickedUndo);
   }
 
-  if (ImGui::MenuItem("Redo")) {
+  if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) {
     observer->observe(Event::ClickedRedo);
   }
 
@@ -95,10 +95,12 @@ void MenuBar::viewMenu(Observer* observer)
     return;
   }
 
-  if (ImGui::MenuItem("Zoom In")) {
+  if (ImGui::MenuItem("Zoom In", "+")) {
+    observer->observe(Event::ClickedZoomIn);
   }
 
-  if (ImGui::MenuItem("Zoom Out")) {
+  if (ImGui::MenuItem("Zoom Out", "-")) {
+    observer->observe(Event::ClickedZoomOut);
   }
 
   ImGui::Separator();
@@ -106,10 +108,12 @@ void MenuBar::viewMenu(Observer* observer)
   if (ImGui::BeginMenu("Theme")) {
 
     if (ImGui::MenuItem("Light")) {
+      currentTheme = "Light";
       observer->observe(Event::ClickedTheme);
     }
 
     if (ImGui::MenuItem("Dark")) {
+      currentTheme = "Dark";
       observer->observe(Event::ClickedTheme);
     }
 
@@ -126,9 +130,13 @@ void MenuBar::viewMenu(Observer* observer)
 
   ImGui::Checkbox("Draw Panel", &visibility.drawPanel);
 
+  ImGui::Checkbox("Layer Panel", &visibility.layerPanel);
+
   ImGui::Checkbox("Document Properties", &visibility.docProperties);
 
   ImGui::Checkbox("Log", &visibility.log);
+
+  ImGui::Checkbox("Style Editor", &visibility.styleEditor);
 
   ImGui::EndMenu();
 }

@@ -50,6 +50,10 @@ bool GlRenderer::init()
   glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
 #ifdef __EMSCRIPTEN__
   const char* vShaderSource = px::webgl::vertexShader;
   const char* fShaderSource = px::webgl::fragmentShader;
@@ -86,15 +90,31 @@ bool GlRenderer::init()
 
   glUseProgram(program);
 
-  transformLocation         = glGetUniformLocation(program, "transform");
-  checkerboardColorLocation = glGetUniformLocation(program, "checkerboardColor");
-  cursorPosLocation         = glGetUniformLocation(program, "cursorPos");
+  transformLocation            = glGetUniformLocation(program, "transform");
+  checkerboardColorLocation    = glGetUniformLocation(program, "checkerboardColor");
+  checkerboardContrastLocation = glGetUniformLocation(program, "checkerboardContrast");
+  cursorPosLocation            = glGetUniformLocation(program, "cursorPos");
+  gridSizeLocation             = glGetUniformLocation(program, "gridSize");
+
+  const float identity[16] {
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+  };
+
+  setCheckerboardColor(1, 1, 1, 1);
+  setCheckerboardContrast(0.9);
+  setCursor(0, 0);
+  setTransform(identity);
 
   return true;
 }
 
 void GlRenderer::blit(const float* img, std::size_t w, std::size_t h)
 {
+  glUniform2i(gridSizeLocation, int(w), int(h));
+
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, img);
@@ -117,29 +137,36 @@ void GlRenderer::blit(const float* img, std::size_t w, std::size_t h)
 
 void GlRenderer::clear(float r, float g, float b, float a)
 {
+  r *= a;
+  g *= a;
+  b *= a;
+
   glClearColor(r, g, b, a);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GlRenderer::setCheckerboardColor(float, float, float, float)
+void GlRenderer::setCheckerboardColor(float r, float g, float b, float a)
 {
+  r *= a;
+  g *= a;
+  b *= a;
+  glUniform4f(checkerboardColorLocation, r, g, b, a);
 }
 
-void GlRenderer::setCheckerboardContrast(float)
+void GlRenderer::setCheckerboardContrast(float contrast)
 {
+  glUniform1f(checkerboardContrastLocation, contrast);
 }
 
-void GlRenderer::setCursor(int, int)
+void GlRenderer::setCursor(int x, int y)
 {
+  glUniform2i(cursorPosLocation, x, y);
 }
 
-void GlRenderer::setTranslation(float, float)
+void GlRenderer::setTransform(const float* data)
 {
-}
-
-void GlRenderer::setZoom(float)
-{
+  glUniformMatrix4fv(transformLocation, 1, GL_FALSE /* no transpose */, data);
 }
 
 GLuint GlRenderer::setupShader(const char* name, const char* source, GLenum shaderType)

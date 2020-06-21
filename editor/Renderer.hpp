@@ -22,8 +22,26 @@ public:
   /// @param h The height of the image, in pixels.
   virtual void blit(const float* img, std::size_t w, std::size_t h) = 0;
   /// Clears the window background.
+  ///
+  /// @note The RGB components should not be premultiplied.
   virtual void clear(float r, float g, float b, float a) = 0;
+  /// Clears the window background using a color pointer.
+  ///
+  /// @note The RGB components should not be premultiplied.
+  void clear(const float* rgba)
+  {
+    clear(rgba[0], rgba[1], rgba[2], rgba[3]);
+  }
+  /// Sets the checkerboard color using a color pointer.
+  ///
+  /// @note The RGB components should not be premultiplied.
+  void setCheckerboardColor(const float* rgba)
+  {
+    setCheckerboardColor(rgba[0], rgba[1], rgba[2], rgba[3]);
+  }
   /// Sets the base color of the checkerboard background.
+  ///
+  /// @note The RGB components should not be premultiplied.
   virtual void setCheckerboardColor(float r, float g, float b, float a) = 0;
   /// Sets the checkerboard contrast level.
   /// This should be between 0 and 1.
@@ -31,14 +49,10 @@ public:
   /// Sets the cursor position, in terms of document coordinates.
   /// This is used to update the highlighted pixel.
   virtual void setCursor(int x, int y) = 0;
-  /// Sets the translation for the image.
-  /// This is useful for navigating areas of the image.
-  virtual void setTranslation(float x, float y) = 0;
-  /// Sets the zoom coefficient.
-  /// This is really just at scale transform.
+  /// Sets the transform to apply to the image.
   ///
-  /// @param zoom The zoom coefficient to assign.
-  virtual void setZoom(float zoom) = 0;
+  /// @param transform The column-major 4x4 transformation to assign.
+  virtual void setTransform(const float* transform) = 0;
 };
 
 } // namespace px

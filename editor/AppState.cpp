@@ -9,6 +9,21 @@ Platform* AppState::getPlatform() noexcept
   return app->getPlatform();
 }
 
+void AppState::snapshotDocument()
+{
+  app->snapshotDocument();
+}
+
+Document* AppState::getDocument() noexcept
+{
+  return app->getDocument();
+}
+
+const Document* AppState::getDocument() const noexcept
+{
+  return app->getDocument();
+}
+
 MenuBar* AppState::getMenuBar() noexcept
 {
   return app->getMenuBar();

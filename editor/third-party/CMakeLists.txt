@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+set(GLFW_BUILD_DOCS OFF)
+
 if(NOT SUBMODULES_CLONED)
 
   find_package(Git REQUIRED)
@@ -13,12 +15,15 @@ endif(NOT SUBMODULES_CLONED)
 add_library(imgui
   imgui/imgui.cpp
   imgui/imgui_draw.cpp
+  imgui/imgui_demo.cpp
   imgui/imgui_widgets.cpp
   imgui/misc/cpp/imgui_stdlib.cpp)
 
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/examples")
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/misc/cpp")
+
+add_subdirectory(glm)
 
 if(EMSCRIPTEN)
 
@@ -35,7 +40,6 @@ endif(EMSCRIPTEN)
 if(NOT EMSCRIPTEN)
 
   add_subdirectory(glfw)
-  add_subdirectory(glm)
 
   add_library(imgui_gl
     imgui/examples/imgui_impl_glfw.cpp

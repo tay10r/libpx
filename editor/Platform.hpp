@@ -21,6 +21,11 @@ public:
   ///
   /// @return A pointer to the renderer used by the platform.
   virtual Renderer* getRenderer() noexcept = 0;
+  /// Gets the size of the window.
+  ///
+  /// @param w A pointer to the variable to receive the width, in pixels.
+  /// @param h A pointer to the variable to receive the height, in pixels.
+  virtual void getWindowSize(std::size_t* w, std::size_t* h) = 0;
 };
 
 } // namespace px

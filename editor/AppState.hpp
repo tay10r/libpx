@@ -3,6 +3,11 @@
 
 namespace px {
 
+struct Document;
+struct KeyEvent;
+struct MouseButtonEvent;
+struct MouseMotionEvent;
+
 class App;
 class Log;
 class MenuBar;
@@ -31,6 +36,17 @@ public:
   ///
   /// @return A pointer to the app, for const access.
   inline const App* getApp() const noexcept { return app; }
+  /// Creates a snapshot of the document.
+  /// This is used primarily for undo/redo purposes.
+  void snapshotDocument();
+  /// Gets a pointer to the document.
+  ///
+  /// @return A pointer to the document, for non-const access.
+  Document* getDocument() noexcept;
+  /// Gets a pointer to the document.
+  ///
+  /// @return A pointer to the document, for const access.
+  const Document* getDocument() const noexcept;
   /// Gets a pointer to the menu bar.
   ///
   /// @return A pointer to the menu bar, for non-const access.
@@ -51,6 +67,12 @@ public:
   ///
   /// @return A pointer to the platform.
   Platform* getPlatform() noexcept;
+  /// Handles a keyboard event.
+  virtual void key(const KeyEvent&) {}
+  /// Handles a mouse button event.
+  virtual void mouseButton(const MouseButtonEvent&) {}
+  /// Handles a mouse motion event.
+  virtual void mouseMotion(const MouseMotionEvent&) {}
 };
 
 } // namespace px

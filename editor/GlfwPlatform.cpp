@@ -18,6 +18,8 @@
 
 namespace {
 
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mod);
 
 void mouseMotionCallback(GLFWwindow* window, double x, double y);
@@ -53,6 +55,8 @@ public:
     }
 
     glfwSetWindowUserPointer(window, this);
+
+    glfwSetKeyCallback(window, &keyCallback);
 
     glfwSetCursorPosCallback(window, &mouseMotionCallback);
 
@@ -118,6 +122,21 @@ public:
   {
     return &renderer;
   }
+  /// Gets the size of the window, in pixels.
+  void getWindowSize(std::size_t* w, std::size_t* h) override
+  {
+    int wTmp = 0;
+    int hTmp = 0;
+
+    glfwGetFramebufferSize(window, &wTmp, &hTmp);
+
+    // Probably not going to happen but just in case.
+    wTmp = std::max(0, wTmp);
+    hTmp = std::max(0, hTmp);
+
+    *w = std::size_t(wTmp);
+    *h = std::size_t(hTmp);
+  }
   /// Runs the application loop.
   ///
   /// @return True on success, false on failure.
@@ -127,6 +146,8 @@ public:
       return false;
     }
 
+    glfwMakeContextCurrent(window);
+
     while (!glfwWindowShouldClose(window)) {
 
       ImGui_ImplOpenGL3_NewFrame();
@@ -134,6 +155,10 @@ public:
       ImGui_ImplGlfw_NewFrame();
 
       ImGui::NewFrame();
+
+      auto& io = ImGui::GetIO();
+
+      glViewport(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 
       if (!app->frame()) {
         return false;
@@ -150,8 +175,17 @@ public:
 
     return true;
   }
+  /// Passes a keyboard event to the app.
+  void key(const px::KeyEvent& event)
+  {
+    if (ImGui::GetIO().WantCaptureKeyboard) {
+      return;
+    }
+
+    app->key(event);
+  }
   /// Passes a mouse button event to the application.
-  void mouseButton(const px::MouseButton& button)
+  void mouseButton(const px::MouseButtonEvent& button)
   {
     if (ImGui::GetIO().WantCaptureMouse) {
       // Make sure we don't step on ImGui's toes.
@@ -161,7 +195,7 @@ public:
     app->mouseButton(button);
   }
   /// Passes a mouse motion event to the application.
-  void mouseMotion(const px::MouseMotion& motion)
+  void mouseMotion(const px::MouseMotionEvent& motion)
   {
     app->mouseMotion(motion);
   }
@@ -180,30 +214,71 @@ int main(int argc, char** argv)
 
 namespace {
 
+void keyCallback(GLFWwindow* window, int key, int /* scancode */, int action, int mods)
+{
+  auto* platform = (GlfwPlatform*) glfwGetWindowUserPointer(window);
+
+  px::KeyEvent keyEvent;
+
+  keyEvent.state = (action == GLFW_PRESS);
+  keyEvent.alt   = !!(mods & GLFW_MOD_ALT);
+  keyEvent.ctrl  = !!(mods & GLFW_MOD_CONTROL);
+  keyEvent.shift = !!(mods & GLFW_MOD_SHIFT);
+
+  switch (key) {
+    case GLFW_KEY_O:
+      keyEvent.key = 'o';
+      break;
+    case GLFW_KEY_S:
+      keyEvent.key = 's';
+      break;
+    case GLFW_KEY_X:
+      keyEvent.key = 'x';
+      break;
+    case GLFW_KEY_Y:
+      keyEvent.key = 'y';
+      break;
+    case GLFW_KEY_Z:
+      keyEvent.key = 'z';
+      break;
+    case GLFW_KEY_EQUAL:
+      keyEvent.key = '+';
+      break;
+    case GLFW_KEY_MINUS:
+      keyEvent.key = '-';
+      break;
+    default:
+      // Do not bother with keys that
+      // wont be used.
+      return;
+  }
+
+  platform->key(keyEvent);
+}
+
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mod)
 {
   auto* platform = (GlfwPlatform*) glfwGetWindowUserPointer(window);
 
-  px::MouseButton mouseButton {
-    px::MouseButton::ID::Middle,
+  px::MouseButtonEvent mouseButton;
+
     // According to GLFW doc, the 'action'
     // is one of GLFW_PRESS or GLFW_RELEASE.
     // Therefore, we can just use boolean logic here.
-    action == GLFW_PRESS,
-    !!(mod & GLFW_MOD_ALT),
-    !!(mod & GLFW_MOD_CONTROL),
-    !!(mod & GLFW_MOD_SHIFT)
-  };
+  mouseButton.state = (action == GLFW_PRESS);
+  mouseButton.alt   = !!(mod & GLFW_MOD_ALT);
+  mouseButton.ctrl  = !!(mod & GLFW_MOD_CONTROL);
+  mouseButton.shift = !!(mod & GLFW_MOD_SHIFT);
 
   switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
-      mouseButton.id = px::MouseButton::ID::Left;
+      mouseButton.id = px::MouseButtonEvent::ID::Left;
       break;
     case GLFW_MOUSE_BUTTON_RIGHT:
-      mouseButton.id = px::MouseButton::ID::Right;
+      mouseButton.id = px::MouseButtonEvent::ID::Right;
       break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
-      mouseButton.id = px::MouseButton::ID::Middle;
+      mouseButton.id = px::MouseButtonEvent::ID::Middle;
       break;
   }
 
@@ -214,10 +289,9 @@ void mouseMotionCallback(GLFWwindow* window, double x, double y)
 {
   auto* platform = (GlfwPlatform*) glfwGetWindowUserPointer(window);
 
-  px::MouseMotion mouseMotion {
-    int(x),
-    int(y)
-  };
+  px::MouseMotionEvent mouseMotion;
+  mouseMotion.x = int(x);
+  mouseMotion.y = int(y);
 
   platform->mouseMotion(mouseMotion);
 }

@@ -1,60 +1,30 @@
 #include "StrokeTool.hpp"
 
-#include "DrawTool.hpp"
-#include "DrawMode.hpp"
-
-#include <libpx.hpp>
+#include "DrawState.hpp"
 
 namespace px {
 
-namespace {
-
-/// Used for drawing a single line.
-class StrokeTool final : public DrawTool
+void StrokeTool::onBegin(const MouseButtonEvent&, int docX, int docY)
 {
-  /// The current line being drawn.
-  Line* line = nullptr;
-public:
-  /// Constructs a new instance of the stroke tool.
-  StrokeTool(DrawMode* d) : DrawTool(d) {}
-  /// Handles mouse movement.
-  void mouseMotion(unsigned x, unsigned y) override
-  {
-    if (!line) {
-      return;
-    }
+  snapshotDocument();
 
-    setPoint(line, 1, x, y);
-  }
-  /// Creates a new line if the state is true.
-  /// Finishes the current line if the state is false.
-  void leftClick(bool state) override
-  {
-    if (!state) {
-      line = nullptr;
-      return;
-    }
+  line = addLine(getDocument(), requireCurrentLayer());
 
-    snapshotDoc();
+  setColor(line, getPrimaryColor());
+  setBlendMode(line, getBlendMode());
+  setPixelSize(line, getPixelSize());
+  addPoint(line, docX, docY);
+  addPoint(line, docX, docY);
+}
 
-    const auto* pos = getCursor();
-    const auto* color = getPrimaryColor();
-
-    line = addLine(getDocument(), requireCurrentLayer());
-
-    setPixelSize(line, getPixelSize());
-    setColor(line, color[0], color[1], color[2], color[3]);
-    setBlendMode(line, getBlendMode());
-    addPoint(line, pos[0], pos[1]);
-    addPoint(line, pos[0], pos[1]);
-  }
-};
-
-} // namespace
-
-DrawTool* createStrokeTool(DrawMode* d)
+void StrokeTool::onDrag(const MouseMotionEvent&, int docX, int docY)
 {
-  return new StrokeTool(d);
+  setPoint(line, 1, docX, docY);
+}
+
+void StrokeTool::onEnd(int, int)
+{
+  line = nullptr;
 }
 
 } // namespace px

@@ -3,8 +3,56 @@
 
 namespace px {
 
+struct KeyEvent;
+struct MouseButtonEvent;
+struct MouseMotionEvent;
+
+/// The base of any input event.
+struct InputEvent
+{
+public:
+  /// Just a stub.
+  virtual ~InputEvent() {}
+};
+
+/// A keyboard input event.
+struct KeyEvent final : public InputEvent
+{
+  /// Whether the key is being pressed or not.
+  bool state = false;
+  /// The key that was pressed.
+  int key = 0;
+  /// Whether or not the control modifier is pressed.
+  bool ctrl = false;
+  /// Whether or not the alt modifier is pressed.
+  bool alt = false;
+  /// Whether or not the shift modifier is pressed.
+  bool shift = false;
+  /// Indicates if this is a key with no modifiers.
+  ///
+  /// @param k The key to check for.
+  ///
+  /// @return True if it is, false otherwise.
+  bool isKey(int k) const noexcept
+  {
+    return (key == k) && !(ctrl || alt || shift);
+  }
+  /// Indicates if this is a Ctrl+<Key> sequence.
+  /// The other modifier bits must be off for this to evaluate true.
+  bool isCtrlKey(int k) const noexcept
+  {
+    return (key == k) && ctrl && !alt && !shift;
+  }
+  /// Whether or not this is a Ctrl+Shift+<Key> sequence.
+  /// The other modifier bits must be off for this to evaluate true.
+  bool isCtrlShiftKey(int k) const noexcept
+  {
+    return (k == key) && ctrl && shift && !alt;
+  }
+};
+
 /// Represents a mouse click event.
-struct MouseButton final
+struct MouseButtonEvent final : public InputEvent
 {
   /// Enumerates the button IDs.
   enum class ID
@@ -51,7 +99,9 @@ struct MouseButton final
   }
 };
 
-struct MouseMotion final
+/// Represents an update to the mouse
+/// position on the window.
+struct MouseMotionEvent final : public InputEvent
 {
   /// The new X coordinate.
   int x = 0;

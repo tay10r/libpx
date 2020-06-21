@@ -6,8 +6,9 @@ namespace px {
 struct Document;
 struct Image;
 
-struct MouseButton;
-struct MouseMotion;
+struct KeyEvent;
+struct MouseButtonEvent;
+struct MouseMotionEvent;
 
 class AppState;
 class Log;
@@ -71,12 +72,16 @@ public:
   virtual bool frame() = 0;
   /// This function is called by the platform
   /// implementation to notify the application of
+  /// a keyboard event.
+  virtual void key(const KeyEvent& event) = 0;
+  /// This function is called by the platform
+  /// implementation to notify the application of
   /// a mouse motion event.
-  virtual void mouseMotion(const MouseMotion& event) = 0;
+  virtual void mouseMotion(const MouseMotionEvent& event) = 0;
   /// This function is called by the platform
   /// implementation to notify the app of a mouse
   /// button event.
-  virtual void mouseButton(const MouseButton& event) = 0;
+  virtual void mouseButton(const MouseButtonEvent& event) = 0;
   /// Parses arguments from the command line.
   ///
   /// @param argc The number of arguments to parse.
@@ -91,6 +96,8 @@ public:
   /// Takes a snapshot of the current document.
   /// This is primarily for undo/redo operations.
   virtual void snapshotDocument() = 0;
+  /// Gets the current zoom factor.
+  virtual float getZoom() const noexcept = 0;
   /// Gets the window title.
   ///
   /// @return A pointer to the window title to display.

@@ -197,21 +197,6 @@ inline bool operator == (const Vec2& a, const Vec2& b) noexcept
   return (a[0] == b[0]) && (a[1] == b[1]);
 }
 
-/// Clips a vector between a minimum and a maximum range.
-///
-/// @param in The vector to clip.
-/// @param min The minimum range of the vector.
-/// @param max The maximum range of the vector.
-///
-/// @return The resultant vector.
-inline Vec2 clip(const Vec2& in, const Vec2& min, const Vec2& max) noexcept
-{
-  return Vec2 {
-    std::min(std::max(in[0], min[0]), max[0]),
-    std::min(std::max(in[1], min[1]), max[1])
-  };
-}
-
 } // namespace
 
 //================//
@@ -2968,12 +2953,6 @@ public:
     Vec2 min { p - (pixelSize - 1) };
     Vec2 max = p;
 
-    const Vec2 imageMin = Vec2 { 0, 0 };
-    const Vec2 imageMax = Vec2 { int(width), int(height) };
-
-    min = clip(min, imageMin, imageMax);
-    max = clip(max, imageMin, imageMax);
-
     for (int y = min[1]; y <= max[1]; y++) {
       for (int x = min[0]; x <= max[0]; x++) {
         blend(x, y, primaryColor);
@@ -3007,6 +2986,11 @@ public:
   /// @param c The color to assign the pixel.
   void blend(int x, int y, const Color& c) noexcept
   {
+    if ((std::size_t(x) >= width)
+     || (std::size_t(y) >= height)) {
+      return;
+    }
+
     auto* dst = &colorBuffer[((y * width) + x) * 4];
 
     auto result = px::blend(blendMode, dst, c);

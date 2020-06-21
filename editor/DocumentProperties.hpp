@@ -47,6 +47,8 @@ public:
   std::size_t getWidth() const noexcept;
   /// Gets the height of the document.
   std::size_t getHeight() const noexcept;
+  /// Gets the background color of the document.
+  const float* getBackgroundColor() const noexcept;
 
   DocumentProperties(const DocumentProperties&) = delete;
 };

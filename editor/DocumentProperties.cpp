@@ -113,4 +113,9 @@ std::size_t DocumentProperties::getHeight() const noexcept
   return std::size_t(self->height);
 }
 
+const float* DocumentProperties::getBackgroundColor() const noexcept
+{
+  return self->backgroundColor;
+}
+
 } // namespace px

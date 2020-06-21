@@ -1,48 +1,36 @@
 #include "ColorPickerTool.hpp"
 
-#include "Editor.hpp"
-#include "DrawTool.hpp"
-
-#include <libpx.hpp>
+#include "DrawState.hpp"
 
 namespace px {
 
-namespace {
-
-/// Used for getting the color on a certain point
-/// of the rendered image.
-class ColorPickerTool final : public DrawTool
+void ColorPickerTool::onBegin(const MouseButtonEvent&, int docX, int docY)
 {
-public:
-  /// Constructs a new color picker tool instance.
-  ColorPickerTool(DrawMode* d) : DrawTool(d) {}
-  /// Gets the color on the image at the current cursor location.
-  void leftClick(bool state) override
-  {
-    if (!state) {
-      return;
-    }
+  pick(docX, docY);
+}
 
-    const auto* pos = getCursor();
+void ColorPickerTool::onDrag(const MouseMotionEvent&, int docX, int docY)
+{
+  pick(docX, docY);
+}
 
-    if ((pos[0] < 0) || (pos[1] < 0)) {
-      return;
-    }
-
-    auto x = std::size_t(pos[0]);
-    auto y = std::size_t(pos[1]);
-
-    const auto* img = getImage();
-
-    getColor(img, x, y, getPrimaryColor());
+void ColorPickerTool::pick(int docX, int docY)
+{
+  if ((docX < 0) || (docY < 0)) {
+    return;
   }
-};
 
-} // namespace
+  auto x = std::size_t(docX);
+  auto y = std::size_t(docY);
 
-DrawTool* createColorPickerTool(DrawMode* d)
-{
-  return new ColorPickerTool(d);
+  const auto* img = getImage();
+  auto w = getImageWidth(img);
+  auto h = getImageHeight(img);
+  if ((x >= w) || (y >= h)) {
+    return;
+  }
+
+  getColor(img, x, y, getPrimaryColor());
 }
 
 } // namespace px

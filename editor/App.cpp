@@ -2,19 +2,23 @@
 
 #include "AppState.hpp"
 #include "DocumentProperties.hpp"
-#include "DrawPanel.hpp"
+#include "DrawState.hpp"
 #include "History.hpp"
 #include "Input.hpp"
 #include "Log.hpp"
 #include "MenuBar.hpp"
 #include "Platform.hpp"
 #include "Renderer.hpp"
+#include "StyleEditor.hpp"
 
 #include <libpx.hpp>
 
 #include <imgui.h>
 
 #include <glm/glm.hpp>
+#include <glm/vec3.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include <memory>
 #include <vector>
@@ -25,57 +29,11 @@ namespace px {
 
 namespace {
 
-/// Represents the application when it is being used
-/// for drawing the artwork.
-class DrawState final : public AppState,
-                        public DrawPanel::Observer
-{
-  DrawPanel drawPanel;
-public:
-  DrawState(App* app) : AppState(app) {}
-  /// Renders the draw state windows.
-  void frame() override
-  {
-    renderDocument();
-
-    const auto* menuBar = getMenuBar();
-
-    if (menuBar->drawPanelVisible()) {
-      drawPanel.frame(this);
-    }
-  }
-protected:
-  /// Renders the document onto the window.
-  void renderDocument()
-  {
-    auto* image = getApp()->getImage();
-
-    auto* color = getColorBuffer(image);
-    auto w = getImageWidth(image);
-    auto h = getImageHeight(image);
-
-    getPlatform()->getRenderer()->blit(color, w, h);
-  }
-  /// Observes an event from the draw panel.
-  void observe(DrawPanel::Event event) override
-  {
-    switch (event) {
-      case DrawPanel::Event::ChangedBlendMode:
-        break;
-      case DrawPanel::Event::ChangedPixelSize:
-        break;
-      case DrawPanel::Event::ChangedPrimaryColor:
-        break;
-      case DrawPanel::Event::ChangedTool:
-        break;
-    }
-  }
-};
-
 /// Implements the interface to the application.
 class AppImpl final : public App,
                       public MenuBar::Observer,
-                      public DocumentProperties::Observer
+                      public DocumentProperties::Observer,
+                      public StyleEditor::Observer
 {
   /// The document history stack.
   History history;
@@ -91,11 +49,17 @@ class AppImpl final : public App,
   DocumentProperties docProperties;
   /// The log for events and errors.
   Log log;
+  /// Used for editing the application style.
+  StyleEditor styleEditor;
+  /// The translation of the document on the edit area.
+  //float translation[2] { 0, 0 };
+  /// The current zoom factor.
+  float zoom = 1;
 public:
   /// Constructs a new app instance.
   AppImpl(Platform* p) : App(p), image(createImage(64, 64))
   {
-    pushAppState(new DrawState(this));
+    pushAppState(DrawState::init(this));
   }
   /// Releases memory allocated by the app.
   ~AppImpl()
@@ -142,6 +106,11 @@ public:
   {
     return &menuBar;
   }
+  /// Gets the current zoom factor.
+  float getZoom() const noexcept override
+  {
+    return zoom;
+  }
   /// Checks for any non-options that may be interpreted
   /// as a document to be opened.
   bool parseArgs(int, char**) override
@@ -164,16 +133,44 @@ public:
 
     return true;
   }
-  /// Handles mouse motion events.
-  void mouseMotion(const MouseMotion&) override
+  /// Handles a keyboard event.
+  void key(const KeyEvent& keyEvent) override
   {
-    //std::printf("mouse: %d %d\n", x, y);
+    if (keyEvent.isCtrlKey('z') && keyEvent.state) {
+      undo();
+      return;
+    } else if ((keyEvent.isCtrlKey('y') || keyEvent.isCtrlShiftKey('z')) && keyEvent.state) {
+      redo();
+      return;
+    } else if (keyEvent.isKey('+') && keyEvent.state) {
+      zoomIn();
+    } else if (keyEvent.isKey('-') && keyEvent.state) {
+      zoomOut();
+    }
+
+    if (stateStack.empty()) {
+      return;
+    }
+
+    stateStack[stateStack.size() - 1]->key(keyEvent);
+  }
+  /// Handles mouse motion events.
+  void mouseMotion(const MouseMotionEvent& motion) override
+  {
+    if (stateStack.empty()) {
+      return;
+    }
+
+    stateStack[stateStack.size() - 1]->mouseMotion(motion);
   }
   /// Handles mouse button state changes.
-  void mouseButton(const MouseButton& button) override
+  void mouseButton(const MouseButtonEvent& button) override
   {
-    (void)button;
-    std::printf("here\n");
+    if (stateStack.empty()) {
+      return;
+    }
+
+    stateStack[stateStack.size() - 1]->mouseButton(button);
   }
 protected:
   /// This function renders a frame without checking for
@@ -182,12 +179,24 @@ protected:
   /// Exceptions are checked by the calling function.
   void uncheckedFrame()
   {
-    getPlatform()->getRenderer()->clear(1, 1, 1, 1);
+    const auto& bg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+
+    auto* renderer = getPlatform()->getRenderer();
+
+    renderer->clear(bg.x, bg.y, bg.z, bg.w);
+
+    renderer->setCheckerboardColor(1, 1, 1, 0.8);
+
+    renderer->setCheckerboardContrast(0.8);
 
     menuBar.frame(this);
 
     if (menuBar.documentPropertiesVisible()) {
-      docProperties.frame();
+      docProperties.frame(this);
+    }
+
+    if (menuBar.styleEditorVisible()) {
+      styleEditor.frame(this);
     }
 
     if (menuBar.logVisible()) {
@@ -217,14 +226,23 @@ protected:
       case MenuBar::Event::ClickedExportCurrentFrame:
         break;
       case MenuBar::Event::ClickedRedo:
+        redo();
         break;
       case MenuBar::Event::ClickedUndo:
+        undo();
         break;
       case MenuBar::Event::ClickedQuit:
         break;
       case MenuBar::Event::ClickedTheme:
+        updateTheme();
         break;
       case MenuBar::Event::ClickedCustomTheme:
+        break;
+      case MenuBar::Event::ClickedZoomIn:
+        zoomIn();
+        break;
+      case MenuBar::Event::ClickedZoomOut:
+        zoomOut();
         break;
     }
   }
@@ -233,10 +251,12 @@ protected:
   {
     switch (event) {
       case DocumentProperties::Event::ChangeBackgroundColor:
+        updateDocumentBackgroundColor();
         break;
       case DocumentProperties::Event::ChangeDirectory:
         break;
       case DocumentProperties::Event::ChangeSize:
+        updateDocumentSize();
         break;
       case DocumentProperties::Event::ChangeName:
         break;
@@ -244,10 +264,86 @@ protected:
         break;
     }
   }
+  /// Observers an event from the style editor.
+  void observe(StyleEditor::Event event) override
+  {
+    auto* renderer = getPlatform()->getRenderer();
+
+    switch (event) {
+      case StyleEditor::Event::ChangedBackgroundColor:
+        break;
+      case StyleEditor::Event::ChangedCheckerboardColor:
+        renderer->setCheckerboardColor(styleEditor.getCheckerboardColor());
+        break;
+      case StyleEditor::Event::ChangedCheckerboardContrast:
+        renderer->setCheckerboardContrast(styleEditor.getCheckerboardContrast());
+        break;
+    }
+  }
+  /// Undoes a document change.
+  void undo()
+  {
+    history.undo();
+  }
+  /// Redoes a document change.
+  void redo()
+  {
+    history.redo();
+  }
+  /// Zooms in by the default factor.
+  void zoomIn(float factor = 2)
+  {
+    zoom *= factor;
+  }
+  /// Zooms out by the default factor.
+  void zoomOut(float factor = 2)
+  {
+    zoom /= factor;
+  }
+  /// Updates the document size based on
+  /// what is in the document properties panel.
+  void updateDocumentSize()
+  {
+    snapshotDocument();
+
+    auto w = docProperties.getWidth();
+    auto h = docProperties.getHeight();
+
+    resizeDoc(getDocument(), w, h);
+
+    resizeImage(image, w, h);
+  }
+  /// Updates the background color of the document.
+  void updateDocumentBackgroundColor()
+  {
+    snapshotDocument();
+
+    const auto* bg = docProperties.getBackgroundColor();
+
+    setBackground(getDocument(), bg);
+  }
+  /// Updates the theme based on the user selection.
+  void updateTheme()
+  {
+    const char* style = menuBar.getSelectedTheme();
+
+    auto isStyle = [style](const char* other) {
+      return !!(std::strcmp(style, other) == 0);
+    };
+
+    if (isStyle("Dark")) {
+      ImGui::StyleColorsDark();
+    } else if (isStyle("Light")) {
+      ImGui::StyleColorsLight();
+    }
+  }
 };
 
 } // namesapce
 
-App* App::init(Platform* platform) { return new AppImpl(platform); }
+App* App::init(Platform* platform)
+{
+  return new AppImpl(platform);
+}
 
 } // namespace px

@@ -2,6 +2,7 @@
 
 #include "App.hpp"
 #include "GlRenderer.hpp"
+#include "Input.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <SDL.h>
@@ -28,8 +29,6 @@ class SdlPlatform final : public px::Platform
 {
   /// Whether or not SDL was initialized.
   bool sdlInitialized = false;
-  /// The background color.
-  float background[4] { 0, 0, 0, 0 };
   /// The OpenGL context for SDL2.
   SDL_GLContext glContext;
   /// A pointer to the application window.
@@ -112,11 +111,127 @@ public:
     }
   }
   /// Gets a pointer to the renderer instance.
-  Renderer* getRenderer() noexcept override
+  px::Renderer* getRenderer() noexcept override
   {
     return &renderer;
   }
-  /** Exits the application window. */
+  /// Gets the current size of the window.
+  ///
+  /// @param w Assigned the window width.
+  /// @param h Assigned the window height.
+  void getWindowSize(std::size_t* w, std::size_t* h) override
+  {
+    int tmpW = 0;
+    int tmpH = 0;
+
+    SDL_GetWindowSize(window, &tmpW, &tmpH);
+
+    tmpW = std::max(tmpW, 0);
+    tmpH = std::max(tmpH, 0);
+
+    *w = std::size_t(tmpW);
+    *h = std::size_t(tmpH);
+  }
+  /// Processes a mouse motion event.
+  void processEvent(const SDL_MouseMotionEvent& event)
+  {
+    px::MouseMotionEvent mouseMotion;
+    mouseMotion.x = event.x;
+    mouseMotion.y = event.y;
+    app->mouseMotion(mouseMotion);
+  }
+  /// Processes a mouse button event.
+  void processEvent(const SDL_MouseButtonEvent& event)
+  {
+    if (ImGui::GetIO().WantCaptureMouse) {
+      // Make sure we don't step on ImGui's toes.
+      return;
+    }
+
+    px::MouseButtonEvent mouseButton;
+
+    switch (event.button) {
+      case SDL_BUTTON_LEFT:
+        mouseButton.id = px::MouseButtonEvent::ID::Left;
+        break;
+      case SDL_BUTTON_MIDDLE:
+        mouseButton.id = px::MouseButtonEvent::ID::Middle;
+        break;
+      case SDL_BUTTON_RIGHT:
+        mouseButton.id = px::MouseButtonEvent::ID::Right;
+        break;
+    }
+
+    auto mod = SDL_GetModState();
+    mouseButton.alt   = !!(mod & KMOD_ALT);
+    mouseButton.shift = !!(mod & KMOD_SHIFT);
+    mouseButton.ctrl  = !!(mod & KMOD_CTRL);
+
+    mouseButton.state = (event.state == SDL_PRESSED);
+
+    app->mouseButton(mouseButton);
+  }
+  /// Processes a keyboard event.
+  void processEvent(const SDL_KeyboardEvent& event)
+  {
+    if (ImGui::GetIO().WantCaptureKeyboard) {
+      // Make sure we don't step on ImGui's toes.
+      return;
+    }
+
+    px::KeyEvent key;
+
+    key.state = (event.state == SDL_PRESSED);
+
+    auto mod = SDL_GetModState();
+    key.alt   = !!(mod & KMOD_ALT);
+    key.shift = !!(mod & KMOD_SHIFT);
+    key.ctrl  = !!(mod & KMOD_CTRL);
+
+    switch (event.keysym.sym) {
+      case SDLK_EQUALS:
+        key.key = '+';
+        break;
+      case SDLK_MINUS:
+        key.key = '-';
+        break;
+      case SDLK_o:
+        key.key = 'o';
+        break;
+      case SDLK_s:
+        key.key = 's';
+        break;
+      case SDLK_u:
+        key.key = 'u';
+        break;
+      case SDLK_x:
+        key.key = 'x';
+        break;
+      case SDLK_y:
+        key.key = 'y';
+        break;
+      case SDLK_z:
+        key.key = 'z';
+        break;
+    }
+    app->key(key);
+  }
+  /// Passes an event to the application.
+  ///
+  /// @param event The event to be passed.
+  void processEvent(const SDL_Event& event)
+  {
+    if (event.type == SDL_MOUSEMOTION) {
+      processEvent(event.motion);
+    } else if ((event.type == SDL_MOUSEBUTTONUP)
+            || (event.type == SDL_MOUSEBUTTONDOWN)) {
+      processEvent(event.button);
+    } else if ((event.type == SDL_KEYDOWN)
+            || (event.type == SDL_KEYUP)) {
+      processEvent(event.key);
+    }
+  }
+  /// Exits the application window.
   void quit() /* TODO : override */
   {
 #ifdef __EMSCRIPTEN__
@@ -139,7 +254,14 @@ public:
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
+
       ImGui_ImplSDL2_ProcessEvent(&event);
+
+      if (event.type == SDL_QUIT) {
+        quit();
+      }
+
+      processEvent(event);
     }
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -158,10 +280,6 @@ public:
     SDL_GL_MakeCurrent(window, glContext);
 
     glViewport(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-
-    glClearColor(background[0], background[1], background[2], background[3]);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     app->frame();
 

@@ -1,58 +1,54 @@
 #include "DrawTool.hpp"
 
-#include "DrawMode.hpp"
-#include "Editor.hpp"
+#include "App.hpp"
+#include "DrawPanel.hpp"
+#include "DrawState.hpp"
 
 namespace px {
 
-void DrawTool::snapshotDoc()
+void DrawTool::snapshotDocument()
 {
-  drawMode->getEditor()->snapshotDoc();
+  drawState->snapshotDocument();
 }
 
 Document* DrawTool::getDocument() noexcept
 {
-  return drawMode->getEditor()->getDocument();
+  return drawState->getDocument();
 }
 
 const Document* DrawTool::getDocument() const noexcept
 {
-  return drawMode->getEditor()->getDocument();
-}
-
-const Image* DrawTool::getImage() const noexcept
-{
-  return drawMode->getEditor()->getImage();
-}
-
-float* DrawTool::getPrimaryColor() noexcept
-{
-  return drawMode->getPrimaryColor();
-}
-
-BlendMode DrawTool::getBlendMode() const noexcept
-{
-  return drawMode->getBlendMode();
+  return drawState->getDocument();
 }
 
 const float* DrawTool::getPrimaryColor() const noexcept
 {
-  return drawMode->getPrimaryColor();
+  return drawState->getDrawPanel()->getPrimaryColor();
 }
 
-const int* DrawTool::getCursor() const noexcept
+float* DrawTool::getPrimaryColor() noexcept
 {
-  return drawMode->getCursor();
+  return drawState->getDrawPanel()->getPrimaryColor();
 }
 
 int DrawTool::getPixelSize() const noexcept
 {
-  return drawMode->getPixelSize();
+  return drawState->getDrawPanel()->getPixelSize();
+}
+
+BlendMode DrawTool::getBlendMode() const noexcept
+{
+  return drawState->getDrawPanel()->getBlendMode();
 }
 
 std::size_t DrawTool::requireCurrentLayer()
 {
-  return drawMode->requireCurrentLayer();
+  return drawState->requireCurrentLayer();
+}
+
+const Image* DrawTool::getImage() const noexcept
+{
+  return drawState->getApp()->getImage();
 }
 
 } // namespace px

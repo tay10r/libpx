@@ -10,16 +10,36 @@ add_library(pxedit_core OBJECT
   App.cpp
   AppState.hpp
   AppState.cpp
+  BucketTool.hpp
+  BucketTool.cpp
+  ColorPickerTool.hpp
+  ColorPickerTool.cpp
   DocumentProperties.hpp
   DocumentProperties.cpp
   DrawPanel.hpp
   DrawPanel.cpp
+  DrawState.hpp
+  DrawState.cpp
+  DrawTool.hpp
+  DrawTool.cpp
+  EllipseTool.hpp
+  EllipseTool.cpp
+  EraserTool.hpp
+  EraserTool.cpp
   History.hpp
   History.cpp
   MenuBar.hpp
   MenuBar.cpp
+  LayerPanel.hpp
+  LayerPanel.cpp
   Log.hpp
   Log.cpp
+  PenTool.hpp
+  PenTool.cpp
+  RectTool.hpp
+  RectTool.cpp
+  StrokeTool.hpp
+  StrokeTool.cpp
   StyleEditor.hpp
   StyleEditor.cpp)
 
@@ -73,6 +93,8 @@ target_link_libraries(pxedit_glfw PRIVATE px glfw imgui_gl OpenGL::OpenGL GLEW::
 set_target_properties(pxedit_glfw
   PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+
+return()
 
 add_executable(pxedit WIN32
   main.cpp

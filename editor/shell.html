@@ -6,7 +6,7 @@
     <title>PX Editor</title>
     <style>
         body { margin: 0; background-color: black }
-        .game {
+        .editor {
             position: absolute;
             top: 0px;
             left: 0px;
@@ -34,25 +34,25 @@
         preRun: [],
         postRun: [],
         print: (function() {
-            return function(text) {
-                text = Array.prototype.slice.call(arguments).join(' ');
-                console.log(text);
-            };
+          return function(text) {
+            text = Array.prototype.slice.call(arguments).join(' ');
+            console.log(text);
+          };
         })(),
         printErr: function(text) {
-            text = Array.prototype.slice.call(arguments).join(' ');
-            console.error(text);
+          text = Array.prototype.slice.call(arguments).join(' ');
+          console.error(text);
         },
         canvas: (function() {
-            var canvas = document.getElementById('canvas');
-            //canvas.addEventListener("webglcontextlost", function(e) { alert('FIXME: WebGL context lost, please reload the page'); e.preventDefault(); }, false);
-            return canvas;
+          var canvas = document.getElementById('canvas');
+          //canvas.addEventListener("webglcontextlost", function(e) { alert('FIXME: WebGL context lost, please reload the page'); e.preventDefault(); }, false);
+          return canvas;
         })(),
         setStatus: function(text) {
-            console.log("status: " + text);
+          console.log("status: " + text);
         },
         monitorRunDependencies: function(left) {
-            console.log("monitor run deps: " + left);
+          console.log("monitor run deps: " + left);
         }
       };
       window.onerror = function() {
