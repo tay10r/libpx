@@ -43,8 +43,8 @@ cp "$editor_src_dir/pxedit_sdl.wasm" "$editor_dst_dir"
 
 cp -R "$doc_src_dir/html/"* "$doc_dst_dir"
 
-rm -f "editor/latest"
-rm -f "doxygen/latest"
+rm -f "editor"
+rm -f "doxygen"
 
 ln -s "releases/$release_stamp/editor/" "editor"
 ln -s "releases/$release_stamp/doxygen/" "doxygen"
