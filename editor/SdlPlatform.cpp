@@ -75,6 +75,8 @@ public:
       return;
     }
 
+    SDL_MaximizeWindow(window);
+
     glContext = SDL_GL_CreateContext(window);
     if (!glContext) {
       std::fprintf(stderr, "Failed to create GL context.\n");
