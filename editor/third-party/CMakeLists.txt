@@ -2,11 +2,18 @@ cmake_minimum_required(VERSION 3.0)
 
 set(GLFW_BUILD_DOCS OFF)
 
+# Prevents platform_dialogs/ tests from being built.
+set(BUILD_TESTING OFF)
+
+# Prevents json from building tests and installing
+set(JSON_BuildTests OFF)
+set(JSON_Install OFF)
+
 if(NOT SUBMODULES_CLONED)
 
   find_package(Git REQUIRED)
 
-  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init)
+  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --depth 1)
 
   set(SUBMODULES_CLONED TRUE CACHE BOOL "Whether or not the Git submodules have been cloned.")
 
@@ -24,6 +31,7 @@ target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/examp
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/misc/cpp")
 
 add_subdirectory(glm)
+add_subdirectory(json)
 
 if(EMSCRIPTEN)
 
@@ -40,6 +48,7 @@ endif(EMSCRIPTEN)
 if(NOT EMSCRIPTEN)
 
   add_subdirectory(glfw)
+  add_subdirectory(platform_folders)
 
   add_library(imgui_gl
     imgui/examples/imgui_impl_glfw.cpp

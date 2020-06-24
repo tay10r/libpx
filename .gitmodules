@@ -13,3 +13,9 @@
 [submodule "editor/third-party/portable-file-dialogs"]
 	path = editor/third-party/portable-file-dialogs
 	url = https://github.com/samhocevar/portable-file-dialogs/
+[submodule "editor/third-party/PlatformFolders"]
+	path = editor/third-party/platform_folders
+	url = https://github.com/sago007/PlatformFolders
+[submodule "editor/third-party/json"]
+	path = editor/third-party/json
+	url = https://github.com/nlohmann/json

@@ -1,5 +1,7 @@
 #include "DocumentProperties.hpp"
 
+#include <libpx.hpp>
+
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
@@ -41,8 +43,6 @@ public:
 class DocumentPropertiesImpl final
 {
   friend DocumentProperties;
-  /// The path to the directory that the document is saved at.
-  std::string directoryPath;
   /// The name of the document.
   std::string name;
   /// The width of the document, in pixels.
@@ -86,18 +86,8 @@ void DocumentProperties::frame(Observer* observer)
     observer->observe(Event::ChangeBackgroundColor);
   }
 
-  if (ImGui::InputText("Directory", &self->directoryPath, 0 /* flags */, nullptr /* cb */, nullptr /* data */)) {
-    observer->observe(Event::ChangeDirectory);
-  }
-
-  ImGui::SameLine();
-
-  if (ImGui::Button("Browse")) {
-    observer->observe(Event::ClickedDirectoryBrowse);
-  }
-
   if (ImGui::InputText("Name", &self->name, 0 /* flags */, nullptr /* cb */, nullptr /* data */)) {
-    observer->observe(Event::ChangeName);
+    observer->observeDocumentRename(self->name.c_str());
   }
 
   ImGui::End();
@@ -116,6 +106,25 @@ std::size_t DocumentProperties::getHeight() const noexcept
 const float* DocumentProperties::getBackgroundColor() const noexcept
 {
   return self->backgroundColor;
+}
+
+const char* DocumentProperties::getDocumentName() const noexcept
+{
+  return self->name.c_str();
+}
+
+void DocumentProperties::setDocumentName(const char* name)
+{
+  self->name = name;
+}
+
+void DocumentProperties::sync(const Document* doc)
+{
+  getBackground(doc, self->backgroundColor);
+  self->name = "";
+  self->width = getDocWidth(doc);
+  self->height = getDocHeight(doc);
+  self->sizeLock = true;
 }
 
 } // namespace px

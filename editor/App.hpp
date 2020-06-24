@@ -36,6 +36,8 @@ public:
   inline App(Platform* p) : platform(p) {}
   /// Just a stub.
   virtual ~App() {}
+  /// Creates a new document.
+  virtual void createDocument() = 0;
   /// Gets a pointer to the current document snapshot.
   virtual Document* getDocument() noexcept = 0;
   /// Gets a pointer to the current document snapshot.
@@ -66,10 +68,16 @@ public:
   ///
   /// @return A pointer to the log.
   virtual Log* getLog() noexcept = 0;
+  /// Gets the current zoom factor.
+  virtual float getZoom() const noexcept = 0;
   /// Called to render a frame.
   ///
   /// @return True on success, false on failure.
   virtual bool frame() = 0;
+  /// Causes the application to fail due to an internal error.
+  /// Before calling this function, there should be error information
+  /// added to the log that describes the failure.
+  virtual void internallyFail() = 0;
   /// This function is called by the platform
   /// implementation to notify the application of
   /// a keyboard event.
@@ -82,6 +90,16 @@ public:
   /// implementation to notify the app of a mouse
   /// button event.
   virtual void mouseButton(const MouseButtonEvent& event) = 0;
+  /// Removes a document from application storage.
+  ///
+  /// @param id The ID of the document to remove.
+  virtual void removeDocument(int id) = 0;
+  /// Opens a document.
+  ///
+  /// @param id The ID of the document to open.
+  ///
+  /// @return True on success, false on failure.
+  virtual bool openDocument(int id) = 0;
   /// Parses arguments from the command line.
   ///
   /// @param argc The number of arguments to parse.
@@ -96,8 +114,6 @@ public:
   /// Takes a snapshot of the current document.
   /// This is primarily for undo/redo operations.
   virtual void snapshotDocument() = 0;
-  /// Gets the current zoom factor.
-  virtual float getZoom() const noexcept = 0;
   /// Gets the window title.
   ///
   /// @return A pointer to the window title to display.

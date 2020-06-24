@@ -1,6 +1,12 @@
 #include "GlRenderer.hpp"
 
-#include "Shaders.hpp"
+#ifdef PXEDIT_DESKTOP
+#include "GlslDesktopShaders.hpp"
+#endif
+
+#ifdef PXEDIT_BROWSER
+#include "GlslBrowserShaders.hpp"
+#endif
 
 #include <cstdio>
 #include <cstdlib>
@@ -54,12 +60,14 @@ bool GlRenderer::init()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-#ifdef __EMSCRIPTEN__
-  const char* vShaderSource = px::webgl::vertexShader;
-  const char* fShaderSource = px::webgl::fragmentShader;
-#else
-  const char* vShaderSource = px::vertexShader;
-  const char* fShaderSource = px::fragmentShader;
+#ifdef PXEDIT_DESKTOP
+  const char* vShaderSource = px::desktop::vertexShader;
+  const char* fShaderSource = px::desktop::fragmentShader;
+#endif
+
+#ifdef PXEDIT_BROWSER
+  const char* vShaderSource = px::browser::vertexShader;
+  const char* fShaderSource = px::browser::fragmentShader;
 #endif
 
   vertexShader = setupShader("Vertex Shader", vShaderSource, GL_VERTEX_SHADER);

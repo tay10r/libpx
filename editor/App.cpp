@@ -1,15 +1,19 @@
 #include "App.hpp"
 
 #include "AppState.hpp"
+#include "AppStorage.hpp"
 #include "Blob.hpp"
+#include "BrowseDocumentsState.hpp"
 #include "DocumentProperties.hpp"
 #include "DrawState.hpp"
 #include "History.hpp"
 #include "ImageIO.hpp"
 #include "Input.hpp"
+#include "InternalErrorState.hpp"
 #include "LocalStorage.hpp"
 #include "Log.hpp"
 #include "MenuBar.hpp"
+#include "OpenErrorState.hpp"
 #include "Platform.hpp"
 #include "Renderer.hpp"
 #include "StyleEditor.hpp"
@@ -23,6 +27,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include <filesystem>
 #include <memory>
 #include <vector>
 
@@ -34,6 +39,7 @@ namespace {
 
 /// Implements the interface to the application.
 class AppImpl final : public App,
+                      public AppStorage::Observer,
                       public MenuBar::Observer,
                       public DocumentProperties::Observer,
                       public StyleEditor::Observer
@@ -58,11 +64,13 @@ class AppImpl final : public App,
   //float translation[2] { 0, 0 };
   /// The current zoom factor.
   float zoom = 1;
+  /// The ID of the currently edited document.
+  int documentID = -1;
 public:
   /// Constructs a new app instance.
   AppImpl(Platform* p) : App(p), image(createImage(64, 64))
   {
-    pushAppState(DrawState::init(this));
+    AppStorage::init(this);
   }
   /// Releases memory allocated by the app.
   ~AppImpl()
@@ -136,6 +144,11 @@ public:
 
     return true;
   }
+  /// Causes the application to fail due to internal reasons.
+  void internallyFail() override
+  {
+    stateStack.emplace_back(new InternalErrorState(this));
+  }
   /// Handles a keyboard event.
   void key(const KeyEvent& keyEvent) override
   {
@@ -149,6 +162,12 @@ public:
       zoomIn();
     } else if (keyEvent.isKey('-') && keyEvent.state) {
       zoomOut();
+    } else if (keyEvent.isCtrlKey('s') && keyEvent.state) {
+      saveDocumentToAppStorage();
+    } else if (keyEvent.isCtrlShiftKey('s') && keyEvent.state) {
+      saveDocumentToLocalStorage();
+    } else if (keyEvent.isCtrlKey('w') && keyEvent.state) {
+      // close
     }
 
     if (stateStack.empty()) {
@@ -174,6 +193,76 @@ public:
     }
 
     stateStack[stateStack.size() - 1]->mouseButton(button);
+  }
+  /// Creates a new document.
+  void createDocument() override
+  {
+    if (!history.isSaved()) {
+      stashChanges();
+    }
+
+    history = History();
+
+    syncDocument();
+
+    documentID = AppStorage::createDocument();
+  }
+  /// Opens a document by a given path.
+  ///
+  /// @param id The ID of the document to open.
+  ///
+  /// @return True on success, false on failure.
+  bool openDocument(int id) override
+  {
+    if (!history.isSaved()) {
+      stashChanges();
+    }
+
+    documentID = id;
+
+    Document* doc = createDoc();
+
+    history = History(doc);
+
+    ErrorList* errList = nullptr;
+
+    int err = AppStorage::openDocument(id, doc, &errList);
+
+    syncDocument();
+
+    docProperties.setDocumentName(AppStorage::getDocumentName(id).c_str());
+
+    if (err != 0) {
+      pushAppState(new OpenErrorState(this, err, errList));
+      return false;
+    }
+
+    return true;
+  }
+  /// Removes a document from application storage.
+  ///
+  /// @param id The ID of the document to open.
+  void removeDocument(int id) override
+  {
+    AppStorage::removeDocument(id);
+    AppStorage::syncToDevice(this);
+  }
+  /// Synchronizes all editor data with new document data.
+  void syncDocument()
+  {
+    const auto* doc = history.getDocument();
+
+    resizeImage(image, getDocWidth(doc), getDocHeight(doc));
+
+    docProperties.sync(doc);
+  }
+  /// Stashes any unsaved changes to the document.
+  ///
+  /// @return True on success, false on failure.
+  bool stashChanges()
+  {
+    // TODO
+    return false;
   }
 protected:
   /// This function renders a frame without checking for
@@ -206,8 +295,15 @@ protected:
       log.frame();
     }
 
-    for (auto& state : stateStack) {
-      state->frame();
+    if (!stateStack.empty()) {
+
+      auto* currentState = stateStack[stateStack.size() - 1].get();
+
+      currentState->frame();
+
+      if (currentState->shouldClose()) {
+        stateStack.pop_back();
+      }
     }
   }
   /// Observes a menu bar event.
@@ -216,12 +312,11 @@ protected:
     switch (event) {
       case MenuBar::Event::ClickedClose:
         break;
-      case MenuBar::Event::ClickedOpen:
-        break;
       case MenuBar::Event::ClickedSave:
+        saveDocumentToAppStorage();
         break;
-      case MenuBar::Event::ClickedSaveAsPx:
-        saveDocument();
+      case MenuBar::Event::ClickedExportPx:
+        saveDocumentToLocalStorage();
         break;
       case MenuBar::Event::ClickedExportSpriteSheet:
         break;
@@ -258,16 +353,18 @@ protected:
       case DocumentProperties::Event::ChangeBackgroundColor:
         updateDocumentBackgroundColor();
         break;
-      case DocumentProperties::Event::ChangeDirectory:
-        break;
       case DocumentProperties::Event::ChangeSize:
         updateDocumentSize();
         break;
-      case DocumentProperties::Event::ChangeName:
-        break;
-      case DocumentProperties::Event::ClickedDirectoryBrowse:
-        break;
     }
+  }
+  /// Observes the document getting renamed.
+  ///
+  /// @param name The name that the document was given.
+  void observeDocumentRename(const char* name) override
+  {
+    AppStorage::renameDocument(documentID, name);
+    AppStorage::syncToDevice(this);
   }
   /// Observers an event from the style editor.
   void observe(StyleEditor::Event event) override
@@ -285,16 +382,42 @@ protected:
         break;
     }
   }
-  /// Saves the document to local storage.
-  void saveDocument()
+  /// Observers a synchronization result from app storage.
+  ///
+  /// @param msg A pointer to the error message, if an error ocurred.
+  /// If the operation was successfull, this is a null pointer.
+  void observeSyncResult(const char* msg) override
   {
+    if (msg != nullptr) {
+      log.logError("Failed to synchronize app storage: ", msg);
+      internallyFail();
+    } else if (stateStack.empty()) {
+      // First sync call means we're initializing the application.
+      // In the future, there should probably be different derived
+      // classes for each sync operation.
+      pushAppState(BrowseDocumentsState::init(this));
+    }
+  }
+  /// Saves the document to the application storage.
+  void saveDocumentToAppStorage()
+  {
+    AppStorage::saveDocument(documentID, getDocument());
+    AppStorage::syncToDevice(this);
+  }
+  /// Saves the document to local storage.
+  void saveDocumentToLocalStorage()
+  {
+    const char* docName = docProperties.getDocumentName();
+
     void* data = nullptr;
 
     size_t size = 0;
 
     saveDoc(getDocument(), &data, &size);
 
-    LocalStorage::save("Untitled.px", data, size);
+    std::string filename = std::string(docName) + ".px";
+
+    LocalStorage::save(filename.c_str(), data, size);
 
     std::free(data);
   }

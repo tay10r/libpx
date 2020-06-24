@@ -36,19 +36,19 @@ void MenuBar::fileMenu(Observer* observer)
     return;
   }
 
-  if (ImGui::MenuItem("Open", "Ctrl+O")) {
-    observer->observe(Event::ClickedOpen);
+  if (ImGui::MenuItem("Close", "Ctrl+W")) {
+    observer->observe(Event::ClickedClose);
   }
 
   if (ImGui::MenuItem("Save", "Ctrl+S")) {
     observer->observe(Event::ClickedSave);
   }
 
-  if (ImGui::MenuItem("Save as PX File")) {
-    observer->observe(Event::ClickedSaveAsPx);
-  }
-
   if (ImGui::BeginMenu("Export")) {
+
+    if (ImGui::MenuItem("As PX File", "Shift+Ctrl+S")) {
+      observer->observe(Event::ClickedExportPx);
+    }
 
     if (ImGui::MenuItem("As Sprite Sheet", nullptr, false, false)) {
       observer->observe(Event::ClickedExportSpriteSheet);

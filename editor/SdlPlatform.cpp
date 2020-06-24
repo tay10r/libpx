@@ -234,7 +234,7 @@ public:
     }
   }
   /// Exits the application window.
-  void quit() /* TODO : override */
+  void quit() override
   {
 #ifdef __EMSCRIPTEN__
     emscripten_cancel_main_loop();

@@ -116,6 +116,11 @@ public:
   {
     return !window;
   }
+  /// Causes the application window to exit.
+  void quit() override
+  {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
   /// Gets a pointer to the renderer to
   /// be used by the application.
   px::Renderer* getRenderer() noexcept override

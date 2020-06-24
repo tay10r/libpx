@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 
+#include <cerrno>
 #include <cstring>
 
 namespace px {
@@ -2521,6 +2522,8 @@ int openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
   if (!filename) {
     return EFAULT;
   }
+
+  errno = 0;
 
   std::ifstream file(filename);
   if (!file.good()) {

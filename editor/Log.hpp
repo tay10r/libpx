@@ -16,6 +16,8 @@ public:
   Log();
   /// Releases memory allocated by the log.
   ~Log();
+  /// Copies the log contents to the clipboard.
+  void copyToClipboard();
   /// Renders a frame of the log widget.
   void frame();
   /// Logs an error message.

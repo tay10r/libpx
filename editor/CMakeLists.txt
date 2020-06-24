@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8.2)
 
 add_subdirectory(third-party)
 
@@ -10,6 +10,10 @@ add_library(pxedit_core OBJECT
   App.cpp
   AppState.hpp
   AppState.cpp
+  AppStorage.hpp
+  AppStorage.cpp
+  BrowseDocumentsState.hpp
+  BrowseDocumentsState.cpp
   Blob.hpp
   Blob.cpp
   BucketTool.hpp
@@ -32,10 +36,16 @@ add_library(pxedit_core OBJECT
   Fs.cpp
   History.hpp
   History.cpp
-  MenuBar.hpp
-  MenuBar.cpp
   ImageIO.hpp
   ImageIO.cpp
+  Index.hpp
+  Index.cpp
+  InternalErrorState.hpp
+  InternalErrorState.cpp
+  MenuBar.hpp
+  MenuBar.cpp
+  OpenErrorState.hpp
+  OpenErrorState.cpp
   LayerPanel.hpp
   LayerPanel.cpp
   Log.hpp
@@ -49,60 +59,26 @@ add_library(pxedit_core OBJECT
   StyleEditor.hpp
   StyleEditor.cpp)
 
+if(EMSCRIPTEN)
+  target_compile_definitions(pxedit_core PUBLIC PXEDIT_BROWSER=1)
+else(EMSCRIPTEN)
+  target_compile_definitions(pxedit_core PUBLIC PXEDIT_DESKTOP=1)
+endif(EMSCRIPTEN)
+
+target_compile_features(pxedit_core PRIVATE cxx_std_17)
+
 target_compile_options(pxedit_core PRIVATE ${px_cxxflags})
 
-target_link_libraries(pxedit_core PRIVATE imgui px glm stb)
+target_link_libraries(pxedit_core
+  PRIVATE
+    nlohmann_json::nlohmann_json
+    imgui
+    px
+    glm
+    stb)
 
 if(EMSCRIPTEN)
-
-  add_executable(pxedit_sdl
-    Platform.hpp
-    GlRenderer.hpp
-    GlRenderer.cpp
-    SdlPlatform.cpp
-    Shaders.hpp
-    Shaders.cpp
-    LocalStorage.hpp
-    LocalStorageBrowser.cpp
-    $<TARGET_OBJECTS:pxedit_core>)
-
-  target_compile_options(pxedit_sdl PRIVATE ${px_cxxflags} -s USE_SDL=2)
-
-  target_link_options(pxedit_sdl PRIVATE
-    -s USE_SDL=2
-    --pre-js "${CMAKE_CURRENT_SOURCE_DIR}/js/pxedit.js"
-    --shell-file "${CMAKE_CURRENT_SOURCE_DIR}/shell.html")
-
-  target_link_libraries(pxedit_sdl PRIVATE px imgui_sdl)
-
+  include(BuildBrowser.cmake)
+else(EMSCRIPTEN)
+  include(BuildDesktop.cmake)
 endif(EMSCRIPTEN)
-
-if(EMSCRIPTEN)
-  return()
-endif(EMSCRIPTEN)
-
-# Setup the OpenGL/GLFW bindings.
-# This implements the platform specific code
-# for OpenGL and GLFW.
-
-find_package(OpenGL REQUIRED COMPONENTS OpenGL)
-find_package(GLEW   REQUIRED)
-
-add_executable(pxedit_glfw WIN32
-  Platform.hpp
-  GlfwPlatform.cpp
-  GlRenderer.hpp
-  GlRenderer.cpp
-  Shaders.hpp
-  Shaders.cpp
-  LocalStorage.hpp
-  LocalStorageNative.cpp
-  $<TARGET_OBJECTS:pxedit_core>)
-
-target_compile_options(pxedit_glfw PRIVATE ${px_cxxflags})
-
-target_link_libraries(pxedit_glfw PRIVATE px glfw imgui_gl OpenGL::OpenGL GLEW::GLEW)
-
-set_target_properties(pxedit_glfw
-  PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")

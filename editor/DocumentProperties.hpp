@@ -5,6 +5,8 @@
 
 namespace px {
 
+struct Document;
+
 /// Contains the implementation data
 /// of the @ref DocumentProperties class.
 class DocumentPropertiesImpl;
@@ -21,10 +23,7 @@ public:
   enum class Event
   {
     ChangeBackgroundColor,
-    ChangeDirectory,
-    ChangeName,
-    ChangeSize,
-    ClickedDirectoryBrowse
+    ChangeSize
   };
   /// Used for observing events
   /// that can occur from the document
@@ -36,6 +35,13 @@ public:
     virtual ~Observer() {}
     /// Observes an event from the widget.
     virtual void observe(Event) = 0;
+    /// Observes a document being renamed.
+    ///
+    /// @param name The name that the document was given.
+    virtual void observeDocumentRename(const char* name)
+    {
+      (void)name;
+    }
   };
   /// Constructs a new instance of the document properties class.
   DocumentProperties();
@@ -49,6 +55,17 @@ public:
   std::size_t getHeight() const noexcept;
   /// Gets the background color of the document.
   const float* getBackgroundColor() const noexcept;
+  /// Gets the current document name.
+  ///
+  /// @return A pointer to the current document name.
+  const char* getDocumentName() const noexcept;
+  /// Sets the name of the current document.
+  ///
+  /// @param name The name to assign the document.
+  void setDocumentName(const char* name);
+  /// Synchronizes information in the panel
+  /// with the information from a new document.
+  void sync(const Document* doc);
 
   DocumentProperties(const DocumentProperties&) = delete;
 };

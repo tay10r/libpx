@@ -42,6 +42,17 @@ Log::Log() : self(new LogImpl()) {}
 
 Log::~Log() { delete self; }
 
+void Log::copyToClipboard()
+{
+  auto text = self->stream.str();
+
+  if (text.empty()) {
+    ImGui::SetClipboardText("Log is empty.");
+  } else {
+    ImGui::SetClipboardText(text.c_str());
+  }
+}
+
 void Log::frame()
 {
   auto content = self->stream.str();

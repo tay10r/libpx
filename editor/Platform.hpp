@@ -26,6 +26,22 @@ public:
   /// @param w A pointer to the variable to receive the width, in pixels.
   /// @param h A pointer to the variable to receive the height, in pixels.
   virtual void getWindowSize(std::size_t* w, std::size_t* h) = 0;
+  /// Causes the platform to close the application.
+  virtual void quit() = 0;
+  /// Indicates if the platform is a web browser.
+  static constexpr bool isBrowser() noexcept
+  {
+#ifdef __EMSCRIPTEN__
+    return true;
+#else
+    return false;
+#endif
+  }
+  /// Indicates if the platform is a desktop.
+  static constexpr bool isDesktop() noexcept
+  {
+    return !isBrowser();
+  }
 };
 
 } // namespace px

@@ -17,9 +17,13 @@ class HistoryImpl final
   ~HistoryImpl();
 };
 
-History::History() : impl(new HistoryImpl())
+History::History(Document* doc) : impl(new HistoryImpl())
 {
-  impl->snapshots.emplace_back(createDoc());
+  if (doc) {
+    impl->snapshots.emplace_back(doc);
+  } else {
+    impl->snapshots.emplace_back(createDoc());
+  }
 }
 
 History::~History()
@@ -35,6 +39,15 @@ Document* History::getDocument() noexcept
 const Document* History::getDocument() const noexcept
 {
   return impl->snapshots[impl->pos];
+}
+
+int History::open(const char* path, ErrorList** errList)
+{
+  delete impl;
+
+  impl = new HistoryImpl();
+
+  return openDoc(impl->snapshots[0], path, errList);
 }
 
 void History::snapshot()
@@ -68,6 +81,14 @@ void History::markSaved()
 bool History::isSaved() const noexcept
 {
   return impl->pos == impl->saved;
+}
+
+History& History::operator = (History&& other) noexcept
+{
+  delete impl;
+  impl = other.impl;
+  other.impl = nullptr;
+  return *this;
 }
 
 HistoryImpl::~HistoryImpl()

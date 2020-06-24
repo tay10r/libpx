@@ -15,7 +15,7 @@ class MenuBar final
     /// Whether or not the layer panel is visible.
     bool layerPanel = true;
     /// Whether or not the document properties are visible.
-    bool docProperties = true;
+    bool docProperties = false;
     /// Whether or not the log is visible.
     bool log = false;
     /// The style editor widget.
@@ -33,12 +33,11 @@ public:
   {
     ClickedClose,
     ClickedExportCurrentFrame,
+    ClickedExportPx,
     ClickedExportSpriteSheet,
     ClickedExportZip,
-    ClickedOpen,
     ClickedRedo,
     ClickedSave,
-    ClickedSaveAsPx,
     ClickedUndo,
     ClickedQuit,
     ClickedCustomTheme,
@@ -86,6 +85,14 @@ public:
   inline const char* getSelectedTheme() const noexcept
   {
     return currentTheme;
+  }
+
+  /// Sets the visibility of the document properties panel.
+  ///
+  /// @param state The visibility state of the document properties panel.
+  inline void setDocumentPropertiesVisibility(bool state)
+  {
+    visibility.docProperties = state;
   }
 protected:
   /// Renders the file menu.

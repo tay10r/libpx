@@ -19,6 +19,8 @@ class AppState
 {
   /// A pointer to the app instance.
   App* app = nullptr;
+  /// Whether or not the application state should be closed.
+  bool closeFlag = false;
 public:
   /// Constructs a new base app state.
   ///
@@ -73,6 +75,14 @@ public:
   virtual void mouseButton(const MouseButtonEvent&) {}
   /// Handles a mouse motion event.
   virtual void mouseMotion(const MouseMotionEvent&) {}
+  /// Whether or not the state should be closed on the next iteration.
+  inline bool shouldClose() const noexcept { return closeFlag; }
+protected:
+  /// Queues the state to be removed.
+  void queueClose()
+  {
+    closeFlag = true;
+  }
 };
 
 } // namespace px
