@@ -29,6 +29,10 @@ it is made specifically for pixel art. The development effort is greatily
 simplified because of this. Therefore, more time can be spent on features
 that are more useful for pixel art artists.
 
+### Screenshots
+
+![](https://user-images.githubusercontent.com/4486381/85635807-77abca80-b644-11ea-87a5-82288fec4d10.png)
+
 ### Building
 
 The library doesn't have any special build instructions, just compile the `libpx.cpp` file.
