@@ -18,6 +18,8 @@ add_library(pxedit_core OBJECT
   Blob.cpp
   BucketTool.hpp
   BucketTool.cpp
+  ColorEdit.hpp
+  ColorEdit.cpp
   ColorPickerTool.hpp
   ColorPickerTool.cpp
   DocumentProperties.hpp
