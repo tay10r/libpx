@@ -277,9 +277,9 @@ protected:
 
     renderer->clear(bg.x, bg.y, bg.z, bg.w);
 
-    renderer->setCheckerboardColor(1, 1, 1, 0.8);
+    renderer->setCheckerboardColor(1, 1, 1, 1);
 
-    renderer->setCheckerboardContrast(0.8);
+    renderer->setCheckerboardContrast(0.2);
 
     menuBar.frame(this);
 

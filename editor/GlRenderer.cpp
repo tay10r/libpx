@@ -110,7 +110,7 @@ bool GlRenderer::init()
   };
 
   setCheckerboardColor(1, 1, 1, 1);
-  setCheckerboardContrast(0.9);
+  setCheckerboardContrast(0.5);
   setCursor(0, 0);
   setTransform(identity);
 
