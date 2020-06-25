@@ -90,6 +90,10 @@ void DocumentProperties::frame(Observer* observer)
     observer->observeDocumentRename(self->name.c_str());
   }
 
+  bool value = true;
+
+  ImGui::Checkbox("test", &value);
+
   ImGui::End();
 }
 

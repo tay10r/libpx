@@ -26,6 +26,7 @@ void EllipseTool::onDrag(const MouseMotionEvent&, int docX, int docY)
 void EllipseTool::onEnd(int, int)
 {
   ellipse = nullptr;
+  stashDocument();
 }
 
 } // namespace px

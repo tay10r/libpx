@@ -252,6 +252,10 @@ public:
     resizeImage(image, getDocWidth(doc), getDocHeight(doc));
 
     docProperties.sync(doc);
+
+    for (auto& state : stateStack) {
+      state->syncDocument(getDocument());
+    }
   }
 protected:
   /// This function renders a frame without checking for
@@ -421,11 +425,13 @@ protected:
   void undo()
   {
     history.undo();
+    syncDocument();
   }
   /// Redoes a document change.
   void redo()
   {
     history.redo();
+    syncDocument();
   }
   /// Zooms in by the default factor.
   void zoomIn(float factor = 2)

@@ -24,6 +24,7 @@ void PenTool::onEnd(int, int)
 {
   dissolvePoints(line);
   line = nullptr;
+  stashDocument();
 }
 
 } // namespace px

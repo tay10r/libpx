@@ -139,6 +139,12 @@ public:
 
     return layerIndex;
   }
+  /// Synchronizes data in the draw state with
+  /// the data that's in the document.
+  void syncDocument(const Document* doc) override
+  {
+    layerPanel.sync(doc);
+  }
 protected:
   /// Gets the current window size.
   glm::vec2 getWinSize() noexcept

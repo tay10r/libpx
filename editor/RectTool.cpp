@@ -36,6 +36,7 @@ void RectTool::onDrag(const MouseMotionEvent&, int docX, int docY)
 void RectTool::onEnd(int, int)
 {
   rect = nullptr;
+  stashDocument();
 }
 
 } // namespace px

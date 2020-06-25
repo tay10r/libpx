@@ -77,6 +77,15 @@ public:
   virtual void mouseMotion(const MouseMotionEvent&) {}
   /// Whether or not the state should be closed on the next iteration.
   inline bool shouldClose() const noexcept { return closeFlag; }
+  /// Synchronizes the data shown by application
+  /// states with the data that's actually in the document.
+  /// This is called, for example, at each undo or redo.
+  ///
+  /// @param doc The document to synchronize the data with.
+  virtual void syncDocument(const Document* doc)
+  {
+    (void)doc;
+  }
 protected:
   /// Queues the state to be removed.
   void queueClose()
