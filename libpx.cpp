@@ -30,12 +30,34 @@ inline constexpr T absolute(T in) noexcept
   return in < 0 ? -in : in;
 }
 
+/// Gets the minimum between two values.
+///
+/// @tparam T The type of the values being compared.
+///
+/// @return The minimum between @p a and @p b.
+template <typename T>
+inline constexpr T min(T a, T b) noexcept
+{
+  return (a < b) ? a : b;
+}
+
+/// Gets the maximum between two values.
+///
+/// @tparam T The type of the values being compared.
+///
+/// @return The maximum between @p a and @p b.
+template <typename T>
+inline constexpr T max(T a, T b) noexcept
+{
+  return (a > b) ? a : b;
+}
+
 /// Clips a scalar value to be in an inclusive interval
 /// of a certain min and maximum.
 template <typename T>
-inline constexpr T clip(T in, T min = 0, T max = 1) noexcept
+inline constexpr T clip(T in, T minValue = 0, T maxValue = 1) noexcept
 {
-  return std::max(min, std::min(in, max));
+  return max(minValue, min(in, maxValue));
 }
 
 //======================//
@@ -166,7 +188,7 @@ inline constexpr Vector<T, dims> min(const Vector<T, dims>& a, const Vector<T, d
   Vector<T, dims> out;
 
   for (std::size_t i = 0; i < dims; i++) {
-    out.data[i] = std::min(a.data[i], b.data[i]);
+    out.data[i] = min(a.data[i], b.data[i]);
   }
 
   return out;
@@ -180,7 +202,7 @@ inline constexpr Vector<T, dims> max(const Vector<T, dims>& a, const Vector<T, d
   Vector<T, dims> out;
 
   for (std::size_t i = 0; i < dims; i++) {
-    out.data[i] = std::max(a.data[i], b.data[i]);
+    out.data[i] = max(a.data[i], b.data[i]);
   }
 
   return out;
@@ -238,15 +260,15 @@ constexpr bool almostEqual(const RGBA& a, const RGBA& b, float bias = colorDelta
 /// Clips a color to be between a minimum and maximum value.
 ///
 /// @param in The color to clip.
-/// @param min The minimum value to clip to.
-/// @param max The maximum value to clip to.
-constexpr RGBA clip(const RGBA& in, float min = 0, float max = 1) noexcept
+/// @param minValue The minimum value to clip to.
+/// @param maxValue The maximum value to clip to.
+constexpr RGBA clip(const RGBA& in, float minValue = 0, float maxValue = 1) noexcept
 {
   return RGBA {
-    std::min(std::max(min, in[0]), max),
-    std::min(std::max(min, in[1]), max),
-    std::min(std::max(min, in[2]), max),
-    std::min(std::max(min, in[3]), max)
+    min(max(minValue, in[0]), maxValue),
+    min(max(minValue, in[1]), maxValue),
+    min(max(minValue, in[2]), maxValue),
+    min(max(minValue, in[3]), maxValue)
   };
 }
 
@@ -2927,11 +2949,11 @@ public:
   /// This is premultiplied within the function call.
   void clear(const RGBA& c) noexcept
   {
-    unsigned max = width * height * 4;
+    std::size_t max = width * height * 4;
 
     RGBA bg = premultiply(c);
 
-    for (unsigned i = 0; i < max; i += 4) {
+    for (std::size_t i = 0; i < max; i += 4) {
       colorBuffer[i + 0] = bg[0];
       colorBuffer[i + 1] = bg[1];
       colorBuffer[i + 2] = bg[2];
@@ -2982,7 +3004,7 @@ public:
   /// @param p The point to plot within the color buffer.
   void plot(const Vec2& p)
   {
-    Vec2 min { p - (pixelSize - 1) };
+    Vec2 min { p - (int(pixelSize) - 1) };
     Vec2 max = p;
 
     for (int y = min[1]; y <= max[1]; y++) {
