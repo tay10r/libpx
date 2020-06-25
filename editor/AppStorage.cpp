@@ -61,9 +61,7 @@ int AppStorage::openDocument(int id, Document* doc, ErrorList** errList)
 {
   Index index(getIndexPath().c_str());
 
-  auto entry = index.findEntry(id);
-
-  return openDoc(doc, entry.path, errList);
+  return index.openDocument(id, doc, errList);
 }
 
 bool AppStorage::saveDocument(int id, const Document* document)

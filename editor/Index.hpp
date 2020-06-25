@@ -6,6 +6,7 @@
 namespace px {
 
 struct Document;
+struct ErrorList;
 
 class IndexImpl;
 
@@ -55,6 +56,14 @@ public:
   ///
   /// @return True on success, false on failure.
   bool open(const char* path);
+  /// Opens a document in the index.
+  ///
+  /// @param id The ID of the document to open.
+  /// @param doc A pointer to the document instance to store the data into.
+  /// @param errList Receives a list of errors if the document has errors opening.
+  ///
+  /// @return Zero on success, a copy of errno on failure.
+  int openDocument(int id, Document* doc, ErrorList** errList);
   /// Removes a document, specified by its ID.
   ///
   /// @param id The ID of the document to remove.

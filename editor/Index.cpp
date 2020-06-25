@@ -10,6 +10,8 @@
 #include <sstream>
 #include <vector>
 
+#include <cerrno>
+
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-local-typedef"
@@ -158,6 +160,21 @@ bool Index::open(const char* path)
   }
 
   return true;
+}
+
+int Index::openDocument(int id, Document* doc, ErrorList** errList)
+{
+  for (const auto& ent : self->entries) {
+    if (ent.id != id) {
+      continue;
+    }
+
+    std::string path = ent.unsaved ? getStashPath(ent) : ent.path;
+
+    return openDoc(doc, path.c_str(), errList);
+  }
+
+  return ENOENT;
 }
 
 bool Index::save(const char* path) const
