@@ -94,6 +94,8 @@ public:
   ///
   /// @param id The ID of the document to remove.
   virtual void removeDocument(int id) = 0;
+  /// Stashes unsaved changes to the application storage.
+  virtual void stashDocument() = 0;
   /// Opens a document.
   ///
   /// @param id The ID of the document to open.

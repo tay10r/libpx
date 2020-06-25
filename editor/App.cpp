@@ -197,10 +197,6 @@ public:
   /// Creates a new document.
   void createDocument() override
   {
-    if (!history.isSaved()) {
-      stashChanges();
-    }
-
     history = History();
 
     syncDocument();
@@ -214,10 +210,6 @@ public:
   /// @return True on success, false on failure.
   bool openDocument(int id) override
   {
-    if (!history.isSaved()) {
-      stashChanges();
-    }
-
     documentID = id;
 
     Document* doc = createDoc();
@@ -239,6 +231,11 @@ public:
 
     return true;
   }
+  /// Stashes any unsaved changes to the document.
+  void stashDocument() override
+  {
+    AppStorage::stashDocument(documentID, getDocument());
+  }
   /// Removes a document from application storage.
   ///
   /// @param id The ID of the document to open.
@@ -255,14 +252,6 @@ public:
     resizeImage(image, getDocWidth(doc), getDocHeight(doc));
 
     docProperties.sync(doc);
-  }
-  /// Stashes any unsaved changes to the document.
-  ///
-  /// @return True on success, false on failure.
-  bool stashChanges()
-  {
-    // TODO
-    return false;
   }
 protected:
   /// This function renders a frame without checking for

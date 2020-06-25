@@ -88,6 +88,8 @@ protected:
   virtual void onEnd(int, int) {}
   /// Creates a snapshot of the document.
   void snapshotDocument();
+  /// Stashes changes to a document.
+  void stashDocument();
   /// Gets a non-const pointer to the document.
   Document* getDocument() noexcept;
   /// Gets a pointer to the document.

@@ -79,6 +79,26 @@ bool AppStorage::saveDocument(int id, const Document* document)
   return true;
 }
 
+bool AppStorage::setUnsaved(int id, bool unsaved)
+{
+  Index index(getIndexPath().c_str());
+
+  index.setUnsaved(id, unsaved);
+
+  return index.save(getIndexPath().c_str());
+}
+
+bool AppStorage::stashDocument(int id, const Document* document)
+{
+  Index index(getIndexPath().c_str());
+
+  if (!index.stashDocument(id, document)) {
+    return false;
+  }
+
+  return index.save(getIndexPath().c_str());
+}
+
 void AppStorage::listDocuments(Observer* observer)
 {
   Index index(getIndexPath().c_str());

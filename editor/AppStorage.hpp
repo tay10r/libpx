@@ -90,6 +90,23 @@ public:
   ///
   /// @return True on success, false on failure.
   static bool saveDocument(int id, const Document* document);
+  /// Sets whether or not a particular document has unsaved changes.
+  ///
+  /// @param id The ID of the document to change the unsaved state of.
+  /// @param unsaved Whether or not this document has unsaved changes.
+  ///
+  /// @return True on success, false on failure.
+  static bool setUnsaved(int id, bool unsaved);
+  /// Stashes unsaved changes to application storage.
+  ///
+  /// @param id The ID of the document being stashed.
+  /// This document will be marked as having unsaved changes
+  /// after calling this function.
+  ///
+  /// @param document The document containing the data to stash.
+  ///
+  /// @return True on success, false on failure.
+  static bool stashDocument(int id, const Document* document);
   /// Gets a path to the document index.
   ///
   /// @return A path to the document index.

@@ -25,6 +25,8 @@ void StrokeTool::onDrag(const MouseMotionEvent&, int docX, int docY)
 void StrokeTool::onEnd(int, int)
 {
   line = nullptr;
+
+  stashDocument();
 }
 
 } // namespace px

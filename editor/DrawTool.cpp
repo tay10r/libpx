@@ -11,6 +11,11 @@ void DrawTool::snapshotDocument()
   drawState->snapshotDocument();
 }
 
+void DrawTool::stashDocument()
+{
+  drawState->getApp()->stashDocument();
+}
+
 Document* DrawTool::getDocument() noexcept
 {
   return drawState->getDocument();

@@ -38,6 +38,25 @@ struct EntryImpl final
   bool unsaved = false;
 };
 
+/// Gets the path for a document state.
+///
+/// @param entry The entry to get the stash for.
+///
+/// @return The path to the document stash.
+std::string getStashPath(const EntryImpl& entry)
+{
+  std::stringstream filenameStream;
+  filenameStream << "document_";
+  filenameStream << entry.id;
+  filenameStream << "_stash.px";
+
+  std::filesystem::path path(entry.path);
+
+  path.replace_filename(filenameStream.str());
+
+  return path.c_str();
+}
+
 } // namespace
 
 /// Contains all the implementation data for the index.
@@ -201,6 +220,35 @@ bool Index::saveDocument(int id, const Document* doc)
   self->entries[entry_index].unsaved = false;
 
   return true;
+}
+
+bool Index::setUnsaved(int id, bool unsaved)
+{
+  for (auto& ent : self->entries) {
+    if (ent.id == id) {
+      ent.unsaved = unsaved;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool Index::stashDocument(int id, const Document* doc)
+{
+  for (auto& ent : self->entries) {
+
+    if (ent.id == id) {
+
+      ent.unsaved = true;
+
+      std::string path = getStashPath(ent);
+
+      return saveDoc(doc, path.c_str());
+    }
+  }
+
+  return false;
 }
 
 Index::Entry Index::findEntry(int id) const noexcept
