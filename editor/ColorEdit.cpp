@@ -8,19 +8,17 @@ bool ColorEdit4::operator () (const char* label, float* color, ImGuiColorEditFla
     committed = false;
   }
 
-  auto change = ImGui::ColorEdit4(label, color, flags);
-  if (change) {
-    first = !changing;
-    changing = true;
-  }
+  auto modified = ImGui::ColorEdit4(label, color, flags);
 
-  if (changing && !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-    first = false;
-    changing = false;
+  if (ImGui::IsItemActive()) {
+    first = !active;
+    active = true;
+  } else if (active) {
+    active = false;
     committed = true;
   }
 
-  return change;
+  return modified;
 }
 
 } // namespace px

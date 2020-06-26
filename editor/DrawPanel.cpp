@@ -85,12 +85,8 @@ void DrawPanel::frame(Observer* observer)
 
   observer = observer ? observer : &nullObserver;
 
-  ImGui::Begin("Draw Panel", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
   availableTools(observer);
   toolProperties(observer);
-
-  ImGui::End();
 }
 
 void DrawPanel::availableTools(Observer* observer)

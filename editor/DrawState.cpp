@@ -1,6 +1,7 @@
 #include "DrawState.hpp"
 
 #include "App.hpp"
+#include "ColorEdit.hpp"
 #include "DrawPanel.hpp"
 #include "Input.hpp"
 #include "LayerPanel.hpp"
@@ -19,6 +20,7 @@
 #include <libpx.hpp>
 
 #include <imgui.h>
+#include <imgui_stdlib.h>
 
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
@@ -33,11 +35,123 @@ namespace px {
 
 namespace {
 
+/// The panel that goes on the left side of the image.
+/// Shows drawing tools and document properties.
+class LeftPanel final
+{
+  /// Whether or not the document size can be changed.
+  bool sizeLock = true;
+  /// Used for editing the background color.
+  ColorEdit4 backgroundEdit;
+public:
+  /// Renders the left panel.
+  void operator() (App* app, DrawPanel& drawPanel)
+  {
+    ImGui::Begin("##left_panel", nullptr, windowFlags());
+
+    drawPanel.frame();
+
+    if (ImGui::CollapsingHeader("Document Properties")) {
+      documentProperties(app);
+    }
+
+    ImGui::End();
+  }
+protected:
+  /// Renders the document properties.
+  void documentProperties(App* app)
+  {
+    documentName(app);
+    documentBackground(app);
+    documentSize(app);
+  }
+  /// Renders the document background setting.
+  void documentBackground(App* app)
+  {
+    float bg[4] { 0, 0, 0, 0 };
+
+    getBackground(app->getDocument(), bg);
+
+    if (backgroundEdit("Background Color", bg)) {
+      setBackground(app->getDocument(), bg);
+    }
+
+    if (backgroundEdit.isJustStarted()) {
+      app->snapshotDocument();
+    }
+
+    if (backgroundEdit.isCommitted()) {
+      app->stashDocument();
+    }
+  }
+  /// Renders the document name.
+  void documentName(App* app)
+  {
+    auto docName = app->getDocumentName();
+
+    if (ImGui::InputText("Name", &docName)) {
+      app->renameDocument(docName.c_str());
+    }
+  }
+  /// Renders the document size.
+  void documentSize(App* app)
+  {
+    const auto* doc = app->getDocument();
+    auto w = int(getDocWidth(doc));
+    auto h = int(getDocHeight(doc));
+
+    auto wChanged = ImGui::InputInt("Width", &w);
+    auto hChanged = ImGui::InputInt("Height", &h);
+
+    if ((wChanged || hChanged) && !sizeLock) {
+
+      app->snapshotDocument();
+
+      app->resizeDocument(w, h);
+
+      app->stashDocument();
+    }
+
+    ImGui::Checkbox("Size Lock", &sizeLock);
+  }
+  /// Gets the window flags used to create
+  /// the left panel window.
+  static constexpr ImGuiWindowFlags windowFlags()
+  {
+    return ImGuiWindowFlags_NoTitleBar
+         | ImGuiWindowFlags_AlwaysAutoResize;
+  }
+};
+
+/// The panel that goes on the right side of the image.
+/// Contains the layers and eventually will also contain
+/// the navigation panel and the palette table.
+class RightPanel final
+{
+public:
+  /// Renders the right panel.
+  void operator () (App* app, LayerPanel& layerPanel)
+  {
+    ImGui::Begin("##right_panel", nullptr, windowFlags());
+
+    layerPanel.frame(app);
+
+    ImGui::End();
+  }
+protected:
+  /// Gets the window flags used to create
+  /// the left panel window.
+  static constexpr ImGuiWindowFlags windowFlags()
+  {
+    return ImGuiWindowFlags_NoTitleBar
+         | ImGuiWindowFlags_AlwaysAutoResize;
+  }
+};
+
 /// Represents the application when it is being used
 /// for drawing the artwork.
 class DrawStateImpl final : public DrawState,
-                            public DrawPanel::Observer,
-                            public LayerPanel::Observer
+                            public DrawPanel::Observer
 {
   /// Contains state information on
   /// the drawing tools.
@@ -46,26 +160,23 @@ class DrawStateImpl final : public DrawState,
   LayerPanel layerPanel;
   /// The current draw tool.
   std::unique_ptr<DrawTool> currentTool;
+  /// Contains draw tools, document properties, etc.
+  LeftPanel leftPanel;
+  /// Contains the layers in the document.
+  RightPanel rightPanel;
 public:
   DrawStateImpl(App* app) : DrawState(app)
   {
     currentTool.reset(new PenTool(this));
-    layerPanel.sync(getDocument());
   }
   /// Renders the draw state windows.
   void frame() override
   {
     renderDocument();
 
-    const auto* menuBar = getMenuBar();
+    leftPanel(getApp(), drawPanel);
 
-    if (menuBar->drawPanelVisible()) {
-      drawPanel.frame(this);
-    }
-
-    if (menuBar->layerPanelVisible()) {
-      layerPanel.frame(this);
-    }
+    rightPanel(getApp(), layerPanel);
   }
   /// Handles a mouse button event.
   void mouseButton(const MouseButtonEvent& mouseButton) override
@@ -135,15 +246,7 @@ public:
       px::addLayer(doc);
     }
 
-    layerPanel.selectLayer(0);
-
-    return layerIndex;
-  }
-  /// Synchronizes data in the draw state with
-  /// the data that's in the document.
-  void syncDocument(const Document* doc) override
-  {
-    layerPanel.sync(doc);
+    return 0;
   }
 protected:
   /// Gets the current window size.
@@ -234,68 +337,6 @@ protected:
         updateTool();
         break;
     }
-  }
-  /// Observes an event from the layer panel.
-  void observe(LayerPanel::Event event) override
-  {
-    switch (event) {
-      case LayerPanel::Event::ClickedAdd:
-        addLayer();
-        break;
-      case LayerPanel::Event::ClickedRemove:
-        removeLayer();
-        break;
-    }
-  }
-  /// Observes the moving of a layer.
-  ///
-  /// @param src The source index.
-  /// @param dst The destination index.
-  void observeLayerMove(std::size_t src, std::size_t dst) override
-  {
-    snapshotDocument();
-
-    moveLayer(getDocument(), src, dst);
-  }
-  /// Observes a layer getting renamed.
-  ///
-  /// @param index The index of the renamed layer.
-  /// @param name The name given to the layer.
-  void observeLayerRename(std::size_t index, const char* name) override
-  {
-    snapshotDocument();
-
-    auto* layer = getLayer(getDocument(), index);
-
-    setLayerName(layer, name);
-  }
-  /// Observes a change in the layer opacity.
-  ///
-  /// @param index The index of the layer whose opacity is being changed.
-  /// @param opacity The new opacity value.
-  /// @param firstChange Whether or not this is the first change
-  /// while the user is holding down the button.
-  void observeLayerOpacity(std::size_t index, float opacity, bool firstChange) override
-  {
-    if (firstChange) {
-      snapshotDocument();
-    }
-
-    auto* layer = getLayer(getDocument(), index);
-
-    setLayerOpacity(layer, opacity);
-  }
-  /// Observes a change in the layer's visibility.
-  ///
-  /// @param index The index of the layer.
-  /// @param visible The new visibility state.
-  void observeLayerVisibility(std::size_t index, bool visible) override
-  {
-    snapshotDocument();
-
-    auto* layer = getLayer(getDocument(), index);
-
-    setLayerVisibility(layer, visible);
   }
   /// Changes the currently selected tool,
   /// based on what's indicating in the draw panel.
@@ -391,26 +432,6 @@ protected:
       (2 * uv[0]) - 1,
       1 - (2 * uv[1])
     };
-  }
-  /// Adds a layer to the document.
-  void addLayer()
-  {
-    auto* layer = px::addLayer(getDocument());
-
-    layerPanel.addLayer(getLayerName(layer));
-  }
-  /// Removes the currently selected layer from the document.
-  void removeLayer()
-  {
-    std::size_t currentLayer = 0;
-
-    if (!layerPanel.getSelectedLayer(&currentLayer)) {
-      return;
-    }
-
-    layerPanel.removeLayer(currentLayer);
-
-    px::removeLayer(getDocument(), currentLayer);
   }
 };
 

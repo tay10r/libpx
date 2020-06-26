@@ -2541,6 +2541,10 @@ int openDoc(Document* doc, const char* filename, ErrorList** errListPtr)
     *errListPtr = nullptr;
   }
 
+  *doc = Document();
+
+  doc->layers.clear();
+
   if (!filename) {
     return EFAULT;
   }

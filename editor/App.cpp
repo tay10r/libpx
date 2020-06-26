@@ -4,7 +4,6 @@
 #include "AppStorage.hpp"
 #include "Blob.hpp"
 #include "BrowseDocumentsState.hpp"
-#include "DocumentProperties.hpp"
 #include "DrawState.hpp"
 #include "History.hpp"
 #include "ImageIO.hpp"
@@ -41,7 +40,6 @@ namespace {
 class AppImpl final : public App,
                       public AppStorage::Observer,
                       public MenuBar::Observer,
-                      public DocumentProperties::Observer,
                       public StyleEditor::Observer
 {
   /// The document history stack.
@@ -54,8 +52,6 @@ class AppImpl final : public App,
   std::vector<std::unique_ptr<AppState>> stateStack;
   /// The menu bar attached to the window.
   MenuBar menuBar;
-  /// The properties of the currently opened document.
-  DocumentProperties docProperties;
   /// The log for events and errors.
   Log log;
   /// Used for editing the application style.
@@ -92,9 +88,15 @@ public:
   {
     return history.getDocument();
   }
+  /// Gets the name of the currently opened document.
+  std::string getDocumentName() override
+  {
+    return AppStorage::getDocumentName(documentID);
+  }
   /// Takes a snapshot of the current document.
   void snapshotDocument() override
   {
+    std::printf("SNAPSHOT\n");
     history.snapshot();
   }
   /// Gets a pointer to the menu bar.
@@ -203,6 +205,12 @@ public:
 
     documentID = AppStorage::createDocument();
   }
+  /// Renames the currently opened document.
+  void renameDocument(const char* name) override
+  {
+    AppStorage::renameDocument(documentID, name);
+    AppStorage::syncToDevice(this);
+  }
   /// Opens a document by a given path.
   ///
   /// @param id The ID of the document to open.
@@ -222,8 +230,6 @@ public:
 
     syncDocument();
 
-    docProperties.setDocumentName(AppStorage::getDocumentName(id).c_str());
-
     if (err != 0) {
       pushAppState(new OpenErrorState(this, err, errList));
       return false;
@@ -234,6 +240,7 @@ public:
   /// Stashes any unsaved changes to the document.
   void stashDocument() override
   {
+    std::printf("STASH\n");
     AppStorage::stashDocument(documentID, getDocument());
   }
   /// Removes a document from application storage.
@@ -244,14 +251,21 @@ public:
     AppStorage::removeDocument(id);
     AppStorage::syncToDevice(this);
   }
+  /// Resizes the currently opened document and image.
+  void resizeDocument(std::size_t w, std::size_t h) override
+  {
+    // note : no stash or snapshot
+
+    resizeDoc(getDocument(), w, h);
+
+    resizeImage(image, w, h);
+  }
   /// Synchronizes all editor data with new document data.
   void syncDocument()
   {
     const auto* doc = history.getDocument();
 
     resizeImage(image, getDocWidth(doc), getDocHeight(doc));
-
-    docProperties.sync(doc);
 
     for (auto& state : stateStack) {
       state->syncDocument(getDocument());
@@ -275,10 +289,6 @@ protected:
     renderer->setCheckerboardContrast(0.2);
 
     menuBar.frame(this);
-
-    if (menuBar.documentPropertiesVisible()) {
-      docProperties.frame(this);
-    }
 
     if (menuBar.styleEditorVisible()) {
       styleEditor.frame(this);
@@ -339,26 +349,6 @@ protected:
         break;
     }
   }
-  /// Observers a document properties event.
-  void observe(DocumentProperties::Event event) override
-  {
-    switch (event) {
-      case DocumentProperties::Event::ChangeBackgroundColor:
-        updateDocumentBackgroundColor();
-        break;
-      case DocumentProperties::Event::ChangeSize:
-        updateDocumentSize();
-        break;
-    }
-  }
-  /// Observes the document getting renamed.
-  ///
-  /// @param name The name that the document was given.
-  void observeDocumentRename(const char* name) override
-  {
-    AppStorage::renameDocument(documentID, name);
-    AppStorage::syncToDevice(this);
-  }
   /// Observers an event from the style editor.
   void observe(StyleEditor::Event event) override
   {
@@ -400,7 +390,7 @@ protected:
   /// Saves the document to local storage.
   void saveDocumentToLocalStorage()
   {
-    const char* docName = docProperties.getDocumentName();
+    std::string docName = AppStorage::getDocumentName(documentID);
 
     void* data = nullptr;
 
@@ -408,7 +398,7 @@ protected:
 
     saveDoc(getDocument(), &data, &size);
 
-    std::string filename = std::string(docName) + ".px";
+    std::string filename = docName + ".px";
 
     LocalStorage::save(filename.c_str(), data, size);
 
@@ -442,28 +432,6 @@ protected:
   void zoomOut(float factor = 2)
   {
     zoom /= factor;
-  }
-  /// Updates the document size based on
-  /// what is in the document properties panel.
-  void updateDocumentSize()
-  {
-    snapshotDocument();
-
-    auto w = docProperties.getWidth();
-    auto h = docProperties.getHeight();
-
-    resizeDoc(getDocument(), w, h);
-
-    resizeImage(image, w, h);
-  }
-  /// Updates the background color of the document.
-  void updateDocumentBackgroundColor()
-  {
-    snapshotDocument();
-
-    const auto* bg = docProperties.getBackgroundColor();
-
-    setBackground(getDocument(), bg);
   }
   /// Updates the theme based on the user selection.
   void updateTheme()

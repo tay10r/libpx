@@ -2,6 +2,8 @@
 
 #include <libpx.hpp>
 
+#include "App.hpp"
+
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
@@ -17,17 +19,9 @@ struct LayerState final
 {
   /// Whether or not the layer is selected.
   bool selected = false;
-  /// Wether or not the layer is getting edited.
+  /// Whether or not the name of the layer is being edited.
   bool editing = false;
-  /// Whether or not the user is currently modifying the opacity.
-  bool opacityChanging = false;
-  /// The opacity of this layer.
-  float opacity = 1.0;
-  /// Whether or not this layer is visible.
-  bool visible = true;
-  /// The name of this layer.
-  std::string name;
-  /// A temporary buffer used for renaming the layer.
+  /// A buffer used for renaming the layer.
   std::string renameBuffer;
 };
 
@@ -37,20 +31,8 @@ struct LayerState final
 class LayerPanelImpl final
 {
   friend LayerPanel;
-  /// A type definition for a layer panel observer.
-  using Observer = LayerPanel::Observer;
   /// The array of layer states.
   std::vector<LayerState> states;
-
-  LayerPanelImpl()
-  {
-    // test data
-    states.resize(4);
-    states[0].name = "layer 1";
-    states[1].name = "layer 2";
-    states[2].name = "layer 3";
-    states[3].name = "layer 4";
-  }
 
   /// Gets the index of the currently selected layer.
   ///
@@ -68,51 +50,70 @@ class LayerPanelImpl final
     return false;
   }
   /// Renders the list of layers in the panel.
-  void renderLayerList(Observer* observer)
+  void renderLayerList(App* app)
   {
-    for (std::size_t i = 0; i < states.size(); i++) {
+    states.resize(getLayerCount(app->getDocument()));
+
+    for (std::size_t i = 0; i < getLayerCount(app->getDocument()); i++) {
 
       ImGui::PushID(i);
 
-      renderLayer(i, observer);
+      renderLayer(i, app);
 
       ImGui::PopID();
     }
   }
   /// Renders the properties of a specific layer.
-  void renderLayerProperties(std::size_t index, Observer* observer)
+  void renderLayerProperties(std::size_t index, App* app)
   {
-    auto& state = states[index];
+    auto* layer = getLayer(app, index);
+    auto opacity = getLayerOpacity(layer);
+    auto visible = getLayerVisibility(layer);
 
-    auto mouseButtonState = ImGui::IsMouseDown(ImGuiMouseButton_Left);
+    if (ImGui::SliderFloat("Opacity", &opacity, 0, 1)) {
 
-    if (ImGui::SliderFloat("Opacity", &state.opacity, 0, 1)) {
-      observer->observeLayerOpacity(index, state.opacity, !state.opacityChanging);
-      state.opacityChanging = true;
+      if (ImGui::IsItemActivated()) {
+        app->snapshotDocument();
+      }
+
+      setLayerOpacity(getLayer(app, index), opacity);
     }
 
-    if (state.opacityChanging && !mouseButtonState) {
-      state.opacityChanging = false;
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+      app->stashDocument();
     }
 
-    if (ImGui::Checkbox("Visible", &state.visible)) {
-      observer->observeLayerVisibility(index, state.visible);
+    if (ImGui::Checkbox("Visible", &visible)) {
+
+      if (ImGui::IsItemActivated()) {
+        app->snapshotDocument();
+      }
+
+      setLayerVisibility(getLayer(app, index), visible);
+    }
+
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+      app->stashDocument();
     }
   }
 protected:
+  Layer* getLayer(App* app, std::size_t index)
+  {
+    return px::getLayer(app->getDocument(), index);
+  }
   /// Renders a single layer.
-  void renderLayer(std::size_t i, Observer* observer)
+  void renderLayer(std::size_t i, App* app)
   {
     const auto& state = states[i];
 
     if (state.editing) {
-      renderEditingLayer(i, observer);
+      renderEditingLayer(i, app);
     } else {
-      renderNonEditingLayer(i, observer);
+      renderNonEditingLayer(i, app);
     }
   }
   /// Renders a layer that is being edited.
-  void renderEditingLayer(std::size_t index, Observer* observer)
+  void renderEditingLayer(std::size_t index, App* app)
   {
     auto& state = states[index];
 
@@ -130,25 +131,24 @@ protected:
     ImGui::SameLine();
 
     if (ImGui::Button("Commit") || enterPressed) {
-
       state.editing = false;
-      state.name = state.renameBuffer;
-
-      observer->observeLayerRename(index, state.name.c_str());
+      renameLayer(index, state.renameBuffer.c_str(), app);
+      state.renameBuffer.clear();
     }
 
     ImGui::SameLine();
 
     if (ImGui::Button("Cancel")) {
       state.editing = false;
+      state.renameBuffer.clear();
     }
   }
   /// Renders a layer that is not being edited.
-  void renderNonEditingLayer(std::size_t index, Observer* observer)
+  void renderNonEditingLayer(std::size_t index, App* app)
   {
     auto& state = states[index];
 
-    const auto* name = state.name.c_str();
+    const auto* name = getLayerName(getLayer(app, index));
 
     if (ImGui::Selectable(name, state.selected, ImGuiSelectableFlags_AllowDoubleClick)) {
 
@@ -157,10 +157,11 @@ protected:
       if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
         state.editing = true;
         state.renameBuffer.clear();
-        state.renameBuffer = state.name;
+        state.renameBuffer = name;
       }
     }
 
+#if 0
     ImGuiDragDropFlags sourceFlags = 0;
     sourceFlags |= ImGuiDragDropFlags_SourceNoDisableHover;
     sourceFlags |= ImGuiDragDropFlags_SourceNoHoldToOpenOthers;
@@ -185,6 +186,7 @@ protected:
 
       ImGui::EndDragDropTarget();
     }
+#endif
   }
   /// Unselects all but one layer.
   /// This is required since when the artist
@@ -195,20 +197,13 @@ protected:
       states[i].selected = (i == index);
     }
   }
-  /// Moves a layer.
-  void moveLayer(std::size_t src, std::size_t dst)
+  void renameLayer(std::size_t index, const char* name, App* app)
   {
-    auto tmp = std::move(states.at(src));
+    app->snapshotDocument();
 
-    for (std::size_t i = src; i < dst; i++) {
-      states.at(i) = std::move(states.at(i + 1));
-    }
+    setLayerName(getLayer(app, index), name);
 
-    for (std::size_t i = src; i > dst; i--) {
-      states.at(i) = std::move(states.at(i - 1));
-    }
-
-    states.at(dst) = std::move(tmp);
+    app->stashDocument();
   }
   // Detects if the 'enter' button is pressed.
   static bool isEnterPressed()
@@ -224,45 +219,25 @@ LayerPanel::~LayerPanel()
   delete self;
 }
 
-void LayerPanel::addLayer(const char* name)
-{
-  LayerState state;
-
-  state.name = name;
-
-  self->states.emplace_back(std::move(state));
-}
-
-void LayerPanel::removeLayer(std::size_t index)
-{
-  if (index >= self->states.size()) {
-    return;
-  }
-
-  self->states.erase(self->states.begin() + index);
-}
-
 bool LayerPanel::getSelectedLayer(std::size_t* index) const noexcept
 {
   return self->getCurrentLayerIndex(index);
 }
 
-void LayerPanel::frame(Observer* observer)
+void LayerPanel::frame(App* app)
 {
-  ImGui::Begin("Layer Panel", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
   if (ImGui::CollapsingHeader("Layers")) {
-    self->renderLayerList(observer);
+    self->renderLayerList(app);
   }
 
   if (ImGui::Button("Add")) {
-    observer->observe(Event::ClickedAdd);
+    // TODO
   }
 
   ImGui::SameLine();
 
   if (ImGui::Button("Remove")) {
-    observer->observe(Event::ClickedRemove);
+    // TODO
   }
 
   std::size_t selectedIndex = 0;
@@ -271,32 +246,7 @@ void LayerPanel::frame(Observer* observer)
 
     ImGui::Separator();
 
-    self->renderLayerProperties(selectedIndex, observer);
-  }
-
-  ImGui::End();
-}
-
-void LayerPanel::selectLayer(std::size_t index) noexcept
-{
-  for (std::size_t i = 0; i < self->states.size(); i++) {
-    self->states[i].selected = (i == index);
-  }
-}
-
-void LayerPanel::sync(const Document* doc)
-{
-  std::size_t layerCount = getLayerCount(doc);
-
-  self->states.clear();
-
-  self->states.resize(layerCount);
-
-  for (std::size_t i = 0; i < self->states.size(); i++) {
-    const auto* layer = getLayer(doc, i);
-    self->states[i].name = getLayerName(layer);
-    self->states[i].opacity = getLayerOpacity(layer);
-    self->states[i].visible = getLayerVisibility(layer);
+    self->renderLayerProperties(selectedIndex, app);
   }
 }
 

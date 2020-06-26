@@ -1,6 +1,8 @@
 #ifndef LIBPX_EDITOR_APP_HPP
 #define LIBPX_EDITOR_APP_HPP
 
+#include <string>
+
 namespace px {
 
 struct Document;
@@ -42,6 +44,8 @@ public:
   virtual Document* getDocument() noexcept = 0;
   /// Gets a pointer to the current document snapshot.
   virtual const Document* getDocument() const noexcept = 0;
+  /// Gets the name of the currently opened document.
+  virtual std::string getDocumentName() = 0;
   /// Gets a pointer to the menu bar.
   virtual MenuBar* getMenuBar() noexcept = 0;
   /// Gets a pointer to the menu bar.
@@ -90,6 +94,10 @@ public:
   /// implementation to notify the app of a mouse
   /// button event.
   virtual void mouseButton(const MouseButtonEvent& event) = 0;
+  /// Renames the currently opened document.
+  ///
+  /// @param name The name to give the document.
+  virtual void renameDocument(const char* name) = 0;
   /// Removes a document from application storage.
   ///
   /// @param id The ID of the document to remove.
@@ -113,6 +121,13 @@ public:
   ///
   /// @param appState The app state to push.
   virtual void pushAppState(AppState* appState) = 0;
+  /// Resizes the currently opened document and the corresponding image.
+  ///
+  /// @note This does not snapshot or stash the document.
+  ///
+  /// @param w The width to resize to, in pixels.
+  /// @param h The height to resize to, in pixels.
+  virtual void resizeDocument(std::size_t w, std::size_t h) = 0;
   /// Takes a snapshot of the current document.
   /// This is primarily for undo/redo operations.
   virtual void snapshotDocument() = 0;

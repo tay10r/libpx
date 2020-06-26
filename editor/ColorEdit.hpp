@@ -19,7 +19,7 @@ class ColorEdit4 final
   bool committed = false;
   /// If true, it means the color edit is in the
   /// middle of being changed.
-  bool changing = false;
+  bool active = false;
 public:
   /// Calls the color editor.
   ///
@@ -34,7 +34,7 @@ public:
   /// first clicks the color edit.
   ///
   /// @return True if this is the first change, false if it is not.
-  inline bool isFirst() const noexcept
+  inline bool isJustStarted() const noexcept
   {
     return first;
   }
