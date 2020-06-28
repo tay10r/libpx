@@ -149,8 +149,6 @@ protected:
     auto* app = getApp();
 
     app->pushAppState(DrawState::init(app));
-
-    app->getMenuBar()->setDocumentPropertiesVisibility(true);
   }
   /// Gets the currently selected item.
   ///

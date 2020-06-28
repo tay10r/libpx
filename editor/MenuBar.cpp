@@ -128,12 +128,6 @@ void MenuBar::viewMenu(Observer* observer)
 
   ImGui::Separator();
 
-  ImGui::Checkbox("Draw Panel", &visibility.drawPanel);
-
-  ImGui::Checkbox("Layer Panel", &visibility.layerPanel);
-
-  ImGui::Checkbox("Document Properties", &visibility.docProperties);
-
   ImGui::Checkbox("Log", &visibility.log);
 
   ImGui::Checkbox("Style Editor", &visibility.styleEditor);
