@@ -312,6 +312,7 @@ protected:
   {
     switch (event) {
       case MenuBar::Event::ClickedClose:
+        closeDocument();
         break;
       case MenuBar::Event::ClickedDiscardChanges:
         discardChanges();
@@ -381,6 +382,17 @@ protected:
       // classes for each sync operation.
       pushAppState(BrowseDocumentsState::init(this));
     }
+  }
+  /// Closes the document by clearing out the application
+  /// state and restarting program.
+  void closeDocument()
+  {
+    // TODO : There's probably a cleaner way to do this.
+    stateStack.clear();
+    history = History();
+    zoom = 1;
+    documentID = -1;
+    AppStorage::init(this);
   }
   /// Saves the document to the application storage.
   void saveDocumentToAppStorage()
