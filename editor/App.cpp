@@ -96,7 +96,6 @@ public:
   /// Takes a snapshot of the current document.
   void snapshotDocument() override
   {
-    std::printf("SNAPSHOT\n");
     history.snapshot();
   }
   /// Gets a pointer to the menu bar.
@@ -240,7 +239,6 @@ public:
   /// Stashes any unsaved changes to the document.
   void stashDocument() override
   {
-    std::printf("STASH\n");
     AppStorage::stashDocument(documentID, getDocument());
   }
   /// Removes a document from application storage.

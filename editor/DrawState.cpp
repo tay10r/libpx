@@ -118,8 +118,7 @@ protected:
   /// the left panel window.
   static constexpr ImGuiWindowFlags windowFlags()
   {
-    return ImGuiWindowFlags_NoTitleBar
-         | ImGuiWindowFlags_AlwaysAutoResize;
+    return ImGuiWindowFlags_AlwaysAutoResize;
   }
 };
 
@@ -143,8 +142,7 @@ protected:
   /// the left panel window.
   static constexpr ImGuiWindowFlags windowFlags()
   {
-    return ImGuiWindowFlags_NoTitleBar
-         | ImGuiWindowFlags_AlwaysAutoResize;
+    return ImGuiWindowFlags_AlwaysAutoResize;
   }
 };
 
