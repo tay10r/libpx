@@ -78,6 +78,10 @@ public:
   ///
   /// @param id The ID of the document to remove.
   static void removeDocument(int id);
+  /// Removes the stashed changes to the document.
+  ///
+  /// @param id The ID of the document to remove the stash of.
+  static void removeDocumentStash(int id);
   /// Renames a document in the application storage.
   ///
   /// @param id The ID of the document to rename.

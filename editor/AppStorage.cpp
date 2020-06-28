@@ -29,6 +29,15 @@ void AppStorage::removeDocument(int id)
   index.save(getIndexPath().c_str());
 }
 
+void AppStorage::removeDocumentStash(int id)
+{
+  Index index(getIndexPath().c_str());
+
+  index.removeDocumentStash(id);
+
+  index.save(getIndexPath().c_str());
+}
+
 AppStorage::Path AppStorage::getDocumentPrefix()
 {
   return std::filesystem::path(AppStorage::getPrefix()) / "Documents";

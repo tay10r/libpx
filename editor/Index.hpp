@@ -68,6 +68,10 @@ public:
   ///
   /// @param id The ID of the document to remove.
   void removeDocument(int id);
+  /// Removes the stash of a document.
+  ///
+  /// @param id The ID of the document to remove the stash of.
+  void removeDocumentStash(int id);
   /// Renames a document.
   ///
   /// @param id The ID of the document to rename.

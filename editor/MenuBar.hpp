@@ -26,6 +26,7 @@ public:
   enum class Event
   {
     ClickedClose,
+    ClickedDiscardChanges,
     ClickedExportCurrentFrame,
     ClickedExportPx,
     ClickedExportSpriteSheet,

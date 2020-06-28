@@ -40,6 +40,10 @@ void MenuBar::fileMenu(Observer* observer)
     observer->observe(Event::ClickedClose);
   }
 
+  if (ImGui::MenuItem("Discard Changes", "")) {
+    observer->observe(Event::ClickedDiscardChanges);
+  }
+
   if (ImGui::MenuItem("Save", "Ctrl+S")) {
     observer->observe(Event::ClickedSave);
   }

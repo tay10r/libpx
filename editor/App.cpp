@@ -313,6 +313,9 @@ protected:
     switch (event) {
       case MenuBar::Event::ClickedClose:
         break;
+      case MenuBar::Event::ClickedDiscardChanges:
+        discardChanges();
+        break;
       case MenuBar::Event::ClickedSave:
         saveDocumentToAppStorage();
         break;
@@ -408,6 +411,16 @@ protected:
     Blob blob = formatPNG(image);
 
     LocalStorage::save("Untitled.png", blob.data(), blob.size());
+  }
+  /// Discards changes made to a document.
+  ///
+  /// This function will delete the stash for the opened
+  /// document and then re-open it.
+  void discardChanges()
+  {
+    AppStorage::removeDocumentStash(documentID);
+
+    openDocument(documentID);
   }
   /// Undoes a document change.
   void undo()

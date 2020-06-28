@@ -59,6 +59,21 @@ std::string getStashPath(const EntryImpl& entry)
   return path.c_str();
 }
 
+/// This function creates an empty file if it
+/// does not already exist. This is used when
+/// creating a document. A document file must
+/// exist when it is added to the index so that
+/// a failure to open this document does not seem
+/// like an error.
+///
+/// @param path The path of the file to create.
+void createEmptyFile(const char* path)
+{
+  if (!std::filesystem::exists(path)) {
+    std::ofstream file(path);
+  }
+}
+
 } // namespace
 
 /// Contains all the implementation data for the index.
@@ -95,6 +110,8 @@ int Index::createDocument()
     id
   };
 
+  createEmptyFile(entry.path.c_str());
+
   self->entries.emplace_back(std::move(entry));
 
   return id;
@@ -105,8 +122,23 @@ void Index::removeDocument(int id)
   for (std::size_t i = 0; i < self->entries.size(); i++) {
     if (self->entries[i].id == id) {
       std::filesystem::remove(self->entries[i].path);
+      std::filesystem::remove(getStashPath(self->entries[i]));
       self->entries.erase(self->entries.begin() + i);
     }
+  }
+}
+
+void Index::removeDocumentStash(int id)
+{
+  for (std::size_t i = 0; i < self->entries.size(); i++) {
+
+    if (self->entries[i].id != id) {
+      continue;
+    }
+
+    std::filesystem::remove(getStashPath(self->entries[i]));
+    self->entries[i].unsaved = false;
+    return;
   }
 }
 
