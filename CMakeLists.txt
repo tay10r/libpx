@@ -7,9 +7,9 @@ option(LIBPX_CMD       "Whether or not to build the command line program." OFF)
 option(LIBPX_TUTORIALS "Wether or not to build the tutorials."             OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set(px_cxxflags -Wall -Wextra -Werror -Wfatal-errors)
+  set(px_cxxflags -Wall -Wextra)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  set(px_cxxflags -Wall -Wextra -Werror -Wfatal-errors)
+  set(px_cxxflags -Wall -Wextra -Wdocumentation)
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
 if(EMSCRIPTEN)
