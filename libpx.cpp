@@ -2933,6 +2933,11 @@ public:
     for (std::size_t i = 1; i < line.points.size(); i++) {
       drawLine(line.points[i - 1], line.points[i - 0]);
     }
+
+    if ((line.points.size() % 2) == 1) {
+      auto p = line.points[line.points.size() - 1];
+      drawLine(p, p);
+    }
   }
   /// Draws a quadrilateral.
   void access(const Quad& quad) noexcept override
