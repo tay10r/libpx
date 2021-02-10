@@ -45,11 +45,11 @@ class LeftPanel final
   ColorEdit4 backgroundEdit;
 public:
   /// Renders the left panel.
-  void operator() (App* app, DrawPanel& drawPanel)
+  void operator() (App* app, DrawPanel::Observer* drawPanelObserver, DrawPanel& drawPanel)
   {
     ImGui::Begin("##left_panel", nullptr, windowFlags());
 
-    drawPanel.frame();
+    drawPanel.frame(drawPanelObserver);
 
     if (ImGui::CollapsingHeader("Document Properties")) {
       documentProperties(app);
@@ -172,7 +172,7 @@ public:
   {
     renderDocument();
 
-    leftPanel(getApp(), drawPanel);
+    leftPanel(getApp(), this, drawPanel);
 
     rightPanel(getApp(), layerPanel);
   }
